@@ -384,14 +384,26 @@ También podés mandar audios 🎤
       if (cat) categoryId = cat.id
     }
 
+    const installmentAmount = parsed.installments > 0
+      ? Math.round((parsed.amount / parsed.installments) * 100) / 100
+      : parsed.amount
+
     const { data, error } = await this.supabase.from('transactions').insert([{
       user_id: this.userId, account_id: parsed.accountId, category_id: categoryId,
-      amount: parsed.amount, currency: parsed.currency, type: parsed.type,
+      amount: installmentAmount, currency: parsed.currency, type: parsed.type,
       description: parsed.description, transaction_date: dateStr, payment_method: parsed.paymentMethod,
       is_installment: parsed.installments > 0, installments_total: parsed.installments || 1, installment_number: 1,
       subscription_frequency: parsed.type === 'subscription' ? 'monthly' : null,
     }]).select('id').single()
     if (error) { console.error('Error creating transaction:', error); throw new Error('Error al guardar el gasto') }
+
+    if (parsed.accountId) {
+      const { data: account } = await this.supabase.from('accounts').select('balance').eq('id', parsed.accountId).single()
+      if (account) {
+        await this.supabase.from('accounts').update({ balance: account.balance - installmentAmount }).eq('id', parsed.accountId)
+      }
+    }
+
     return data.id
   }
 
@@ -415,8 +427,14 @@ También podés mandar audios 🎤
   private formatConfirmation(parsed: ParsedTransaction, transactionId: string): string {
     const parts: string[] = []
     parts.push(`✅ <b>${parsed.description}</b>`)
-    parts.push(`${formatAmount(parsed.amount, parsed.currency)} ${parsed.currency}`)
-    if (parsed.installments > 0) parts.push(`${parsed.installments} cuotas`)
+
+    if (parsed.installments > 0) {
+      const perCuota = Math.round((parsed.amount / parsed.installments) * 100) / 100
+      parts.push(`${formatAmount(perCuota, parsed.currency)} (${parsed.installments} cuotas — ${formatAmount(parsed.amount, parsed.currency)} total)`)
+    } else {
+      parts.push(`${formatAmount(parsed.amount, parsed.currency)} ${parsed.currency}`)
+    }
+
     if (parsed.accountName) parts.push(`[${parsed.accountName}]`)
     if (parsed.categoryName) parts.push(`#${parsed.categoryName}`)
     return parts.join(' · ')
@@ -588,8 +606,13 @@ También podés mandar audios 🎤
       }
 
       case 'confirm': {
-        const lines: string[] = [`<b>${pending.description}</b>`, `${formatAmount(pending.amount, pending.currency)} ${pending.currency}`]
-        if (pending.installments > 0) lines.push(`${pending.installments} cuotas`)
+        const perCuota = pending.installments > 0 ? Math.round((pending.amount / pending.installments) * 100) / 100 : pending.amount
+        const lines: string[] = [`<b>${pending.description}</b>`]
+        if (pending.installments > 0) {
+          lines.push(`${formatAmount(perCuota, pending.currency)} c/u × ${pending.installments} cuotas (${formatAmount(pending.amount, pending.currency)} total)`)
+        } else {
+          lines.push(`${formatAmount(pending.amount, pending.currency)} ${pending.currency}`)
+        }
         if (pending.accountName) lines.push(`Cuenta: ${pending.accountName}`)
         if (pending.categoryName) lines.push(`Categoría: ${pending.categoryName}`)
         if (pending.paymentMethod === 'card') lines.push('Pago: Tarjeta')
