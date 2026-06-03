@@ -44,7 +44,7 @@ interface TransactionRow {
   accounts?: { name: string } | null
 }
 
-type FlowState = 'ask_cuotas' | 'ask_cuotas_count' | 'select_account' | 'select_category' | 'confirm'
+type FlowState = 'ask_cuotas' | 'ask_cuotas_count' | 'select_account' | 'select_category' | 'confirm' | 'edit'
 
 function normalizeAmount(raw: string): number {
   return parseFloat(raw.replace(/\./g, '').replace(',', '.'))
@@ -519,6 +519,13 @@ También podés mandar audios 🎤
         pending.categoryName = decodeURIComponent(value)
         nextState = 'confirm'
         break
+      case 'edit':
+        if (value === 'cat') nextState = 'select_category'
+        else if (value === 'acct') nextState = 'select_account'
+        else if (value === 'cuotas') nextState = 'ask_cuotas'
+        else if (value === 'back') nextState = 'confirm'
+        else nextState = 'confirm'
+        break
       case 'confirm':
         if (value === 'yes') {
           await this.clearPending()
@@ -528,7 +535,7 @@ También podés mandar audios 🎤
           if (pending.accountName) for (const w of words) await this.saveKeywordRule(w, 'account_name', pending.accountName)
           return { text: this.formatConfirmation(pending, txnId), keyboard: this.confirmationKeyboard(txnId) }
         }
-        nextState = 'ask_cuotas'
+        nextState = 'edit'
         break
       case 'cancel':
         await this.clearPending()
@@ -592,6 +599,23 @@ También podés mandar audios 🎤
           text: `¿Confirmás el gasto?\n\n${lines.join('\n')}`,
           keyboard: [[{ text: '✅ Confirmar', callback_data: 'new:confirm:yes' }, { text: '✏️ Editar', callback_data: 'new:confirm:edit' }],
           [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
+        }
+      }
+
+      case 'edit': {
+        const lines: string[] = []
+        if (pending.categoryName) lines.push(`🏷️ <b>Categoría:</b> ${pending.categoryName}`)
+        else lines.push(`🏷️ <b>Categoría:</b> sin asignar`)
+        if (pending.accountName) lines.push(`🏦 <b>Cuenta:</b> ${pending.accountName}`)
+        else lines.push(`🏦 <b>Cuenta:</b> sin asignar`)
+        if (pending.installments > 0) lines.push(`💳 <b>Cuotas:</b> ${pending.installments}`)
+        else lines.push(`💳 <b>Cuotas:</b> pago único`)
+        return {
+          text: `¿Qué querés editar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}\n\n${lines.join('\n')}`,
+          keyboard: [
+            [{ text: '🏷️ Categoría', callback_data: 'new:edit:cat' }, { text: '🏦 Cuenta', callback_data: 'new:edit:acct' }],
+            [{ text: '💳 Cuotas', callback_data: 'new:edit:cuotas' }, { text: '🔙 Volver', callback_data: 'new:edit:back' }],
+          ],
         }
       }
 
