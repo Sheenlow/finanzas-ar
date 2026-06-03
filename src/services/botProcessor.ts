@@ -50,6 +50,13 @@ function normalizeAmount(raw: string): number {
   return parseFloat(raw.replace(/\./g, '').replace(',', '.'))
 }
 
+function getArgentinaISOString(): string {
+  const argStr = new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })
+  const d = new Date(argStr)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.000-03:00`
+}
+
 function extractKeywords(text: string): string[] {
   const words = text
     .toLowerCase()
@@ -295,18 +302,22 @@ export class BotProcessor {
     const cmd = text.trim().split(/\s+/)[0].toLowerCase()
     switch (cmd) {
       case '/start': case '/help':
-        return `<b>🤖 Cómo usarme</b>
+        return `<b>🤖 ¿Cómo usarme?</b>
 
-<b>Gastos:</b> [qué] [monto] [en cuenta?] [con pago?] [cuotas?]
+<b>Para gastos, escribí:</b>
+[descripción] [monto] [medio de pago]
+
+<b>Medios de pago:</b>
+• efectivo
+• débito
+• crédito
+• transferencia
 
 <b>Ejemplos:</b>
 • Supermercado 8000 en Efectivo
 • Netflix 12 USD débito suscripción
 • Nafta 5000 crédito 3 cuotas
-
-<b>Palabras clave:</b>
-<i>Pago:</i> efectivo, débito, crédito, transferencia
-<i>Cuotas:</i> cuotas 3, 3 cuotas
+• Zapatillas 25000 crédito
 
 También podés mandar audios 🎤
 
@@ -333,7 +344,8 @@ También podés mandar audios 🎤
   }
 
   private async getStatsMessage(): Promise<string> {
-    const now = new Date()
+    const argStr = new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })
+    const now = new Date(argStr)
     const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const { data } = await this.supabase.from('transactions').select('amount, currency, type').eq('user_id', this.userId).like('transaction_date', `${monthPrefix}%`)
     let totalArs = 0, totalUsd = 0
@@ -363,8 +375,7 @@ También podés mandar audios 🎤
   // ──── Transaction CRUD ──────────────────────────────
 
   private async createTransaction(parsed: ParsedTransaction): Promise<string> {
-    const now = new Date()
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T12:00:00Z`
+    const dateStr = getArgentinaISOString()
 
     let categoryId: string | null = null
     if (parsed.categoryName) {
