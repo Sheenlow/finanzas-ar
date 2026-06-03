@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --color-background: hsl(40 20% 97%);
+  --color-foreground: hsl(240 5% 20%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(240 5% 20%);
+  --color-primary: hsl(240 5% 20%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(40 20% 90%);
+  --color-secondary-foreground: hsl(240 5% 20%);
+  --color-muted: hsl(40 20% 90%);
+  --color-muted-foreground: hsl(240 5% 40%);
+  --color-border: hsl(40 20% 85%);
+  --color-input: hsl(40 20% 85%);
+  --color-ring: hsl(240 5% 20%);
+  --color-celeste: hsl(200 65% 55%);
+  --color-crypto: hsl(32 90% 50%);
+  --color-peso: hsl(140 45% 42%);
+  --color-income: hsl(142 71% 29%);
+  --color-expense: hsl(340 75% 55%);
+  --radius-lg: 0.75rem;
+  --radius-md: calc(0.75rem - 2px);
+  --radius-sm: calc(0.75rem - 4px);
+}
+
+.dark {
+  --color-background: hsl(240 5% 10%);
+  --color-foreground: hsl(40 20% 90%);
+  --color-card: hsl(240 5% 14%);
+  --color-card-foreground: hsl(40 20% 90%);
+  --color-primary: hsl(40 20% 90%);
+  --color-primary-foreground: hsl(240 5% 10%);
+  --color-secondary: hsl(240 5% 18%);
+  --color-secondary-foreground: hsl(40 20% 90%);
+  --color-muted: hsl(240 5% 18%);
+  --color-muted-foreground: hsl(40 20% 60%);
+  --color-border: hsl(240 5% 22%);
+  --color-input: hsl(240 5% 22%);
+  --color-ring: hsl(40 20% 80%);
+}
+
+@theme {
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--color-card-foreground);
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-foreground);
+  --color-border: var(--color-border);
+  --color-input: var(--color-input);
+  --color-ring: var(--color-ring);
+  --color-celeste: var(--color-celeste);
+  --color-crypto: var(--color-crypto);
+  --color-peso: var(--color-peso);
+  --color-income: var(--color-income);
+  --color-expense: var(--color-expense);
+  --radius-lg: var(--radius-lg);
+  --radius-md: var(--radius-md);
+  --radius-sm: var(--radius-sm);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.2s ease-out;
+}

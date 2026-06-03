@@ -1,0 +1,64 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+
+export async function POST(req: Request) {
+  try {
+    const { token } = await req.json();
+    if (!token) {
+      return NextResponse.json({ error: 'Token requerido' }, { status: 400 });
+    }
+
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Debes iniciar sesión para aceptar la invitación' }, { status: 401 });
+    }
+
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: invitation, error: fetchError } = await adminClient
+      .from('invitations')
+      .select('*')
+      .eq('token', token)
+      .eq('status', 'pending')
+      .single();
+
+    if (fetchError || !invitation) {
+      return NextResponse.json({ error: 'Invitación no válida o expirada' }, { status: 404 });
+    }
+
+    if (invitation.invited_email !== user.email) {
+      return NextResponse.json({ error: 'Esta invitación fue enviada a otro email' }, { status: 403 });
+    }
+
+    const { error: joinError } = await adminClient
+      .from('household_members')
+      .insert([{
+        household_id: invitation.household_id,
+        user_id: user.id,
+        role: 'member',
+        split_percentage: 0,
+      }]);
+
+    if (joinError) {
+      if (joinError.code === '23505') {
+        return NextResponse.json({ error: 'Ya eres miembro de este hogar' }, { status: 409 });
+      }
+      throw joinError;
+    }
+
+    await adminClient
+      .from('invitations')
+      .update({ status: 'accepted' })
+      .eq('id', invitation.id);
+
+    return NextResponse.json({ success: true, householdId: invitation.household_id });
+  } catch (error: any) {
+    console.error('Error accepting invitation:', error);
+    return NextResponse.json({ error: error.message || 'Error al aceptar invitación' }, { status: 500 });
+  }
+}
