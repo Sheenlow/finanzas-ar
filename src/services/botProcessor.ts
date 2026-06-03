@@ -521,11 +521,19 @@ También podés mandar audios 🎤
     const now = new Date()
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T12:00:00Z`
 
+    let categoryId: string | null = null
+    if (parsed.categoryName) {
+      const cats = await this.getCategories()
+      const cat = cats.find(c => c.name.toLowerCase() === parsed.categoryName!.toLowerCase())
+      if (cat) categoryId = cat.id
+    }
+
     const { data, error } = await this.supabase
       .from('transactions')
       .insert([{
         user_id: this.userId,
         account_id: parsed.accountId,
+        category_id: categoryId,
         amount: parsed.amount,
         currency: parsed.currency,
         type: parsed.type,
@@ -633,8 +641,13 @@ También podés mandar audios 🎤
     }
 
     if (action === 'setcat') {
-      const categoryName = parts[2]
-      await this.updateTransactionField(transactionId, 'category_name', categoryName)
+      const categoryName = parts.slice(2).join('|')
+      const categories = await this.getCategories()
+      const cat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase())
+      if (!cat) {
+        return { text: `❓ Categoría "${categoryName}" no encontrada.`, keyboard: this.confirmationKeyboard(transactionId) }
+      }
+      await this.updateTransactionField(transactionId, 'category_id', cat.id)
 
       const txn = await this.getTransaction(transactionId)
       if (txn) {
