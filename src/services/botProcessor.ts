@@ -296,7 +296,7 @@ export class BotProcessor {
 
   // ──── Commands ──────────────────────────────────────
 
-  private isCommand(text: string): boolean { return /^\/(start|help|stats|list|balance|config|vincular)\b/.test(text.trim()) }
+  private isCommand(text: string): boolean { return /^\/(start|help|stats|list|balance|config|vincular|desvincular)\b/.test(text.trim()) }
 
   async handleCommand(text: string, telegramUserId?: number): Promise<string> {
     const cmd = text.trim().split(/\s+/)[0].toLowerCase()
@@ -325,7 +325,8 @@ También podés mandar audios 🎤
 /stats — resumen del mes
 /list — últimos gastos
 /balance — saldo de cuentas
-/config — personalizar IA`
+/config — personalizar IA
+/desvincular — desvincular cuenta`
       case '/stats': return await this.getStatsMessage()
       case '/list': return await this.getListMessage()
       case '/balance': return await this.getBalancesMessage()
@@ -367,6 +368,27 @@ También podés mandar audios 🎤
         const greeting = name ? `¡Vinculado correctamente, ${name}!` : '¡Cuenta vinculada correctamente!'
 
         return `✅ ${greeting}\n\nYa podés registrar gastos en tu cuenta de FinanzasAR.\nProbá: /help para ver cómo usarme.`
+      }
+      case '/desvincular': {
+        if (!telegramUserId) return '❌ Error: no se pudo identificar tu usuario de Telegram.'
+
+        const { data: link } = await this.supabase.from('bot_users')
+          .select('supabase_user_id')
+          .eq('telegram_user_id', telegramUserId)
+          .maybeSingle()
+
+        if (!link) return '❌ No tenés ninguna cuenta vinculada.'
+
+        // Delete the link
+        await this.supabase.from('bot_users').delete().eq('telegram_user_id', telegramUserId)
+
+        // Regenerate a fresh link_token in bot_config (so the dashboard shows a new code)
+        const newToken = crypto.randomUUID()
+        await this.supabase.from('bot_config')
+          .update({ link_token: newToken, updated_at: new Date().toISOString() })
+          .eq('user_id', link.supabase_user_id)
+
+        return '🔓 Cuenta desvinculada. Ya no recibiré gastos de este Telegram.\n\nPara volver a vincular, usá el código del Dashboard con /vincular.'
       }
       case '/config': {
         const rest = text.slice('/config'.length).trim()
