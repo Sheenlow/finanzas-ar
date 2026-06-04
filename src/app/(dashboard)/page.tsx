@@ -233,7 +233,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <span className="text-xs text-muted-foreground whitespace-nowrap">/vincular {botConfig.link_token.toString().slice(0, 8)}...</span>
             </div>
           </section>
-        ) : null}
+        ) : (
+          <section className="bg-muted/30 border border-border rounded-2xl p-5 mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🤖</span>
+              <div>
+                <p className="text-sm text-muted-foreground">Bot de Telegram no configurado</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Usá el comando /config en el bot de Telegram para activarlo.</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />
 
