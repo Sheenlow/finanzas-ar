@@ -35,10 +35,12 @@ export async function POST(req: NextRequest) {
   // Resolve supabase user
   let supabaseUserId: string | null = null
 
-  // Allow /vincular even without prior linking
-  const isVincular = text?.startsWith('/vincular')
+  // Allow /vincular and /desvincular even without prior linking
+  const isVincularCmd = text?.startsWith('/vincular')
+  const isDesvincularCmd = text?.startsWith('/desvincular')
+  const needsTelegramId = isVincularCmd || isDesvincularCmd
 
-  if (!isVincular) {
+  if (!isVincularCmd && !isDesvincularCmd) {
     supabaseUserId = await resolveUserId(telegramUserId)
     if (!supabaseUserId) {
       await telegram.sendMessage(chatId,
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
     let result: { text: string; keyboard?: { text: string; callback_data: string }[][] }
 
     if (text) {
-      if (isVincular) {
+      if (needsTelegramId) {
         result = { text: await processor.handleCommand(text, telegramUserId) }
       } else {
         result = await processor.processText(text)
