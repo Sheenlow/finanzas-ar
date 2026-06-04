@@ -76,35 +76,30 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   let botConfig: { link_token: string } | null = null
   let botLink: { telegram_user_id: number } | null = null
 
-  try {
-    const { data: existing } = await supabase
+  // Force-create bot_config with a fresh token using admin client (bypasses RLS)
+  const newToken = crypto.randomUUID()
+  const { data: existing } = await adminClient
+    .from('bot_config')
+    .select('link_token')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (existing?.link_token) {
+    botConfig = { link_token: existing.link_token }
+  } else {
+    const { error: upsertErr } = await adminClient
       .from('bot_config')
-      .select('link_token')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (existing?.link_token) {
-      botConfig = { link_token: existing.link_token }
-    } else {
-      const newToken = crypto.randomUUID()
-      if (existing) {
-        await adminClient.from('bot_config').update({ link_token: newToken }).eq('user_id', user.id)
-      } else {
-        await adminClient.from('bot_config').insert({ user_id: user.id, link_token: newToken })
-      }
-      botConfig = { link_token: newToken }
-    }
-
-    const { data: link } = await supabase
-      .from('bot_users')
-      .select('telegram_user_id')
-      .eq('supabase_user_id', user.id)
-      .maybeSingle()
-
-    botLink = link
-  } catch (err) {
-    console.error('Bot config error:', err)
+      .upsert({ user_id: user.id, link_token: newToken }, { onConflict: 'user_id' })
+    if (upsertErr) console.error('bot_config upsert error:', upsertErr)
+    else botConfig = { link_token: newToken }
   }
+
+  const { data: link } = await supabase
+    .from('bot_users')
+    .select('telegram_user_id')
+    .eq('supabase_user_id', user.id)
+    .maybeSingle()
+  botLink = link
 
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
