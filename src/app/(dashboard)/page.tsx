@@ -114,6 +114,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   let householdMembers: any[] = [];
   let householdTransactions: any[] = [];
+  let sharedTransactionIds: string[] = [];
   let mySplitPercentage = 0;
 
   const { data: membership } = (await supabase
@@ -153,6 +154,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       const isCurrentMonth = t.transaction_date.startsWith(selectedMonth);
       return isCurrentMonth;
     });
+
+    const { data: sharedRecs } = await adminClient
+      .from('household_share_records')
+      .select('transaction_id')
+      .eq('household_id', membership.household_id);
+    sharedTransactionIds = Array.from(new Set((sharedRecs || []).map((r: any) => r.transaction_id)));
+
     householdGoals = await savingsGoalsService.getForHousehold(supabase, membership.household_id);
   }
 
@@ -272,6 +280,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             members={householdMembers}
             mySplitPercentage={mySplitPercentage}
             userId={user.id}
+            sharedTransactionIds={sharedTransactionIds}
           />
         )}
 

@@ -38,9 +38,10 @@ interface Props {
   members: Member[]
   mySplitPercentage: number
   userId: string
+  sharedTransactionIds: string[]
 }
 
-export function DashboardHouseholdSummary({ transactions, members, mySplitPercentage, userId }: Props) {
+export function DashboardHouseholdSummary({ transactions, members, mySplitPercentage, userId, sharedTransactionIds }: Props) {
   const [balance, setBalance] = useState<BalancePair | null>(null)
   const [showSettleModal, setShowSettleModal] = useState(false)
 
@@ -148,7 +149,7 @@ export function DashboardHouseholdSummary({ transactions, members, mySplitPercen
                   {transactions.map((t: any) => {
                     const isMine = t.user_id === userId
                     const payerName = isMine ? 'Vos' : (memberMap.get(t.user_id) || 'Otro')
-                    const isShared = t.household_share_records?.[0]?.count > 0
+                    const isShared = sharedTransactionIds.includes(t.id)
                     return (
                       <tr key={t.id} className="hover:bg-muted/50 transition-colors">
                         <td className="py-2 px-3 text-foreground truncate max-w-[200px]">{t.description}</td>
