@@ -902,10 +902,26 @@ También podés mandar audios 🎤
     const { file_path } = await telegram.getFile(fileId)
     const audioBuffer = await telegram.downloadFile(file_path)
 
-    const { toFile } = await import('openai/uploads')
-    const file = await toFile(audioBuffer, 'voice.ogg', { type: 'audio/ogg' })
+    // Use direct fetch to Whisper API (avoids SDK file handling issues in serverless)
+    const formData = new FormData()
+    formData.append('model', 'whisper-1')
+    formData.append('language', 'es')
+    formData.append('response_format', 'text')
+    formData.append('file', new Blob([audioBuffer as any], { type: 'audio/ogg' }), 'voice.ogg')
 
-    const transcription = await this.openai.audio.transcriptions.create({ model: 'whisper-1', file, language: 'es', response_format: 'text' })
-    return this.processText(transcription)
+    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      console.error('Whisper API error:', err)
+      throw new Error('Whisper transcription failed')
+    }
+
+    const transcription = await res.text()
+    return this.processText(transcription.trim())
   }
 }
