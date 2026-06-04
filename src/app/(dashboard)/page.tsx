@@ -73,30 +73,38 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  let { data: botConfig } = await supabase
-    .from('bot_config')
-    .select('link_token')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  let botConfig: { link_token: string } | null = null
+  let botLink: { telegram_user_id: number } | null = null
 
-  if (!botConfig) {
-    const { data: created } = await adminClient
+  try {
+    const { data: existing } = await supabase
       .from('bot_config')
-      .insert({ user_id: user.id })
       .select('link_token')
-      .single();
-    botConfig = created;
-  } else if (!botConfig.link_token) {
-    const newToken = crypto.randomUUID();
-    await adminClient.from('bot_config').update({ link_token: newToken }).eq('user_id', user.id);
-    botConfig = { link_token: newToken };
-  }
+      .eq('user_id', user.id)
+      .maybeSingle()
 
-  const { data: botLink } = await supabase
-    .from('bot_users')
-    .select('telegram_user_id')
-    .eq('supabase_user_id', user.id)
-    .maybeSingle();
+    if (existing?.link_token) {
+      botConfig = { link_token: existing.link_token }
+    } else {
+      const newToken = crypto.randomUUID()
+      if (existing) {
+        await adminClient.from('bot_config').update({ link_token: newToken }).eq('user_id', user.id)
+      } else {
+        await adminClient.from('bot_config').insert({ user_id: user.id, link_token: newToken })
+      }
+      botConfig = { link_token: newToken }
+    }
+
+    const { data: link } = await supabase
+      .from('bot_users')
+      .select('telegram_user_id')
+      .eq('supabase_user_id', user.id)
+      .maybeSingle()
+
+    botLink = link
+  } catch (err) {
+    console.error('Bot config error:', err)
+  }
 
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
