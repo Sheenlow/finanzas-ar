@@ -899,8 +899,23 @@ También podés mandar audios 🎤
   async processVoice(fileId: string, telegramToken: string): Promise<{ text: string; keyboard?: { text: string; callback_data: string }[][] }> {
     const { TelegramClient } = await import('./telegramClient')
     const telegram = new TelegramClient(telegramToken)
-    const { file_path } = await telegram.getFile(fileId)
-    const audioBuffer = await telegram.downloadFile(file_path)
+
+    let filePath: string
+    try {
+      const info = await telegram.getFile(fileId)
+      filePath = info.file_path
+    } catch (e: any) {
+      console.error('Telegram getFile error:', e)
+      return { text: '❌ No pude obtener el audio de Telegram. Intentá de nuevo.' }
+    }
+
+    let audioBuffer: Buffer
+    try {
+      audioBuffer = await telegram.downloadFile(filePath)
+    } catch (e: any) {
+      console.error('Telegram download error:', e)
+      return { text: '❌ No pude descargar el audio. Intentá de nuevo.' }
+    }
 
     const { writeFileSync, createReadStream, unlinkSync } = await import('fs')
     const { join } = await import('path')
@@ -915,6 +930,9 @@ También podés mandar audios 🎤
         response_format: 'text',
       })
       return this.processText(transcription)
+    } catch (e: any) {
+      console.error('Whisper API error:', e)
+      return { text: '❌ No pude transcribir el audio. ¿Probaste con un audio más corto?' }
     } finally {
       try { unlinkSync(tmpPath) } catch {}
     }
