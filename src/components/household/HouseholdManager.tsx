@@ -78,6 +78,8 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
     }
   }
 
+  const membersWithoutIncome = members.filter(m => !incomeMap.has(m.user_id))
+
   const handleCreate = async () => {
     if (!householdName.trim()) return
     setLoading(true)
@@ -287,12 +289,18 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
 
   const handleApplyAutoSplit = async () => {
     if (!household) return
+
+    if (membersWithoutIncome.length > 0) {
+      setError(`Los siguientes miembros no tienen ingresos declarados:\n${membersWithoutIncome.map(m => `• ${m.user_id}`).join('\n')}\n\nDeclará sus ingresos mensuales antes de aplicar el split.`)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
       const updates = members.map(m => ({
         id: m.id,
-        split_percentage: Math.round((autoSplitMap.get(m.user_id) || m.split_percentage) * 100) / 100,
+        split_percentage: Math.round((autoSplitMap.get(m.user_id) ?? m.split_percentage) * 100) / 100,
       }))
       for (const update of updates) {
         await supabase
@@ -548,7 +556,7 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
             )
           })}
         </div>
-        {totalIncome > 0 && isAdmin && (
+        {totalIncome > 0 && isAdmin && membersWithoutIncome.length === 0 && (
           <button
             onClick={handleApplyAutoSplit}
             disabled={loading}
@@ -557,6 +565,17 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
             <Wand2 className="w-4 h-4" />
             Aplicar split automático a todos
           </button>
+        )}
+        {totalIncome > 0 && isAdmin && membersWithoutIncome.length > 0 && (
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+            <p className="font-medium mb-1">Faltan ingresos por declarar</p>
+            <p className="text-xs text-amber-700">
+              {membersWithoutIncome.length === 1
+                ? 'Hay 1 miembro sin ingresos declarados.'
+                : `Hay ${membersWithoutIncome.length} miembros sin ingresos declarados.`}{' '}
+              Todos los miembros deben declarar sus ingresos mensuales para usar el split automático.
+            </p>
+          </div>
         )}
         {!isAdmin && (
           <button
