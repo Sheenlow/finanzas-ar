@@ -32,7 +32,7 @@ interface ParsedTransaction {
   categoryName: string | null
   subscriptionFrequency: string | null
   householdId: string | null
-  isSharing: boolean
+  isSharing: boolean | undefined
 }
 
 interface TransactionRow {
@@ -190,7 +190,7 @@ function parseText(
   return {
     description: description.length > 100 ? description.slice(0, 100) : description,
     amount, currency, type, accountId, accountName, paymentMethod, installments, categoryName,
-    subscriptionFrequency: null, householdId: null, isSharing: false,
+    subscriptionFrequency: null, householdId: null, isSharing: undefined,
   }
 }
 
@@ -225,7 +225,7 @@ Moneda default ARS. paymentMethod: efectivo/cash→cash, débito/debito→card, 
     accountId: null, accountName: parsed.accountName || null,
     paymentMethod: parsed.paymentMethod || 'cash', installments: parsed.installments || 0,
     categoryName: parsed.categoryName || null,
-    subscriptionFrequency: null, householdId: null, isSharing: false,
+    subscriptionFrequency: null, householdId: null, isSharing: undefined,
   }
 }
 
@@ -660,6 +660,8 @@ También podés mandar audios 🎤
         if (value === 'cat') nextState = 'select_category'
         else if (value === 'acct') nextState = 'select_account'
         else if (value === 'cuotas') nextState = 'ask_cuotas'
+        else if (value === 'household_show') nextState = 'ask_household_show'
+        else if (value === 'household_share') nextState = 'ask_household_share'
         else if (value === 'back') nextState = 'confirm'
         else nextState = 'confirm'
         break
@@ -810,8 +812,12 @@ También podés mandar audios 🎤
           text: `¿Qué querés editar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}\n\n${lines.join('\n')}`,
           keyboard: [
             [{ text: '🏷️ Categoría', callback_data: 'new:edit:cat' }, { text: '🏦 Cuenta', callback_data: 'new:edit:acct' }],
-            [{ text: '💳 Cuotas', callback_data: 'new:edit:cuotas' }, { text: '🔙 Volver', callback_data: 'new:edit:back' }],
-          ],
+            [{ text: '💳 Cuotas', callback_data: 'new:edit:cuotas' }],
+            pending.householdId
+              ? [{ text: '🏠 Hogar visible', callback_data: 'new:edit:household_show' }, { text: '🤝 Compartir', callback_data: 'new:edit:household_share' }]
+              : [],
+            [{ text: '🔙 Volver', callback_data: 'new:edit:back' }],
+          ].filter(r => r.length > 0),
         }
       }
 
@@ -868,9 +874,6 @@ También podés mandar audios 🎤
 
     // Preset household-related fields
     parsed.householdId = householdId
-    if (householdId) {
-      parsed.isSharing = false
-    }
 
     let firstState: FlowState
     if (needsCuotasQuestion) {
