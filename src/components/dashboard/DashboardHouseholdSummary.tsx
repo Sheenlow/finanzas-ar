@@ -87,6 +87,8 @@ export function DashboardHouseholdSummary({ transactions, members, mySplitPercen
   const arsFormatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
   const usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
 
+  const memberMap = new Map(members.map(m => [m.user_id, (m as any).profiles?.full_name || 'Miembro']))
+
   return (
     <>
       <section className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-8">
@@ -127,6 +129,53 @@ export function DashboardHouseholdSummary({ transactions, members, mySplitPercen
             <p className="text-xl font-bold">{memberCount}</p>
           </div>
         </div>
+
+        {transactions.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">Últimos gastos del hogar</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-muted-foreground border-b border-border/50">
+                    <th className="text-left py-2 px-3 font-medium">Descripción</th>
+                    <th className="text-left py-2 px-3 font-medium w-28">Fecha</th>
+                    <th className="text-right py-2 px-3 font-medium w-28">Monto</th>
+                    <th className="text-left py-2 px-3 font-medium w-24">Pagado por</th>
+                    <th className="text-center py-2 px-3 font-medium w-20">Compartido</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {transactions.map((t: any) => {
+                    const isMine = t.user_id === userId
+                    const payerName = isMine ? 'Vos' : (memberMap.get(t.user_id) || 'Otro')
+                    const isShared = t.household_share_records?.[0]?.count > 0
+                    return (
+                      <tr key={t.id} className="hover:bg-muted/50 transition-colors">
+                        <td className="py-2 px-3 text-foreground truncate max-w-[200px]">{t.description}</td>
+                        <td className="py-2 px-3 text-muted-foreground text-xs">
+                          {new Date(t.transaction_date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                        </td>
+                        <td className="py-2 px-3 text-right font-medium">
+                          {new Intl.NumberFormat('es-AR', { style: 'currency', currency: t.currency || 'ARS' }).format(t.amount)}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isMine ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {payerName}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isShared ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'}`}>
+                            {isShared ? 'Sí' : 'No'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         <HouseholdBalanceWidget userId={userId} className="mt-4" />
 

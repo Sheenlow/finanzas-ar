@@ -31,7 +31,7 @@ export const transactionsService = {
   async getHouseholdTransactions(supabase: any, householdId: string) {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, accounts!transactions_account_id_fkey(name), categories(name)')
+      .select('*, accounts!transactions_account_id_fkey(name), categories(name), household_share_records(count)')
       .eq('household_id', householdId)
       .order('transaction_date', { ascending: false });
 

@@ -144,7 +144,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     const { data: members } = await supabase
       .from('household_members')
-      .select('*')
+      .select('*, profiles(full_name)')
       .eq('household_id', membership.household_id);
     householdMembers = members || [];
 

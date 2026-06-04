@@ -41,6 +41,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
   const [categories, setCategories] = useState<Category[]>([])
   const [categoryId, setCategoryId] = useState(initialTransaction?.category_id || '')
   const [householdId, setHouseholdId] = useState<string | null>(null)
+  const [isHouseholdVisible, setIsHouseholdVisible] = useState(false)
   const [isHouseholdExpense, setIsHouseholdExpense] = useState(false)
   const [householdMembers, setHouseholdMembers] = useState<(HouseholdMember & { profiles?: { full_name?: string } })[]>([])
   const [householdIncomes, setHouseholdIncomes] = useState<HouseholdIncome[]>([])
@@ -174,7 +175,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
       installments_total: finalInstallments,
       installment_number: 1,
       subscription_frequency: isRecurring ? frequency : null,
-      household_id: isHouseholdExpense && householdId ? householdId : null
+      household_id: (isHouseholdExpense || isHouseholdVisible) && householdId ? householdId : null
     }
 
     try {
@@ -219,6 +220,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
         setIsInstallment(false)
         setInstallmentsTotal('')
         setCustomInstallments('')
+        setIsHouseholdVisible(false)
         setIsHouseholdExpense(false)
       }
     } catch (error) {
@@ -462,31 +464,62 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
         <div className="space-y-2">
           <button
             type="button"
-            onClick={() => setIsHouseholdExpense(!isHouseholdExpense)}
+            onClick={() => {
+              const next = !isHouseholdVisible
+              setIsHouseholdVisible(next)
+              if (!next) setIsHouseholdExpense(false)
+            }}
             className={cn(
               "w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm font-medium transition-all",
-              isHouseholdExpense
-                ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-700"
+              isHouseholdVisible
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700"
                 : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
             )}
           >
             <span className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Compartir con el hogar
+              Mostrar en el hogar
             </span>
             <div className={cn(
               "w-10 h-5 rounded-full transition-colors relative",
-              isHouseholdExpense ? "bg-indigo-500" : "bg-muted-foreground/30"
+              isHouseholdVisible ? "bg-emerald-500" : "bg-muted-foreground/30"
             )}>
               <div className={cn(
                 "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
-                isHouseholdExpense ? "left-5" : "left-0.5"
+                isHouseholdVisible ? "left-5" : "left-0.5"
               )} />
             </div>
           </button>
 
+          {isHouseholdVisible && (
+            <button
+              type="button"
+              onClick={() => setIsHouseholdExpense(!isHouseholdExpense)}
+              className={cn(
+                "w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ml-4",
+                isHouseholdExpense
+                  ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-700"
+                  : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Compartir con el hogar
+              </span>
+              <div className={cn(
+                "w-10 h-5 rounded-full transition-colors relative",
+                isHouseholdExpense ? "bg-indigo-500" : "bg-muted-foreground/30"
+              )}>
+                <div className={cn(
+                  "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
+                  isHouseholdExpense ? "left-5" : "left-0.5"
+                )} />
+              </div>
+            </button>
+          )}
+
           {isHouseholdExpense && splitPreview.length > 0 && (
-            <div className="p-3 bg-indigo-50/50 border border-indigo-200/50 rounded-xl space-y-1">
+            <div className="p-3 bg-indigo-50/50 border border-indigo-200/50 rounded-xl space-y-1 ml-4">
               <p className="text-xs text-indigo-700 font-medium mb-1">División del gasto</p>
               {splitPreview.map(p => (
                 <div key={p.user_id} className="flex justify-between text-sm">
