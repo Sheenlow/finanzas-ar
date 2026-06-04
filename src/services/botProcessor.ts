@@ -917,21 +917,23 @@ También podés mandar audios 🎤
       return { text: '❌ No pude descargar el audio. Intentá de nuevo.' }
     }
 
-    const { writeFileSync, createReadStream, unlinkSync } = await import('fs')
+    const { writeFileSync, readFileSync, unlinkSync } = await import('fs')
     const { join } = await import('path')
     const tmpPath = join('/tmp', `voice-${Date.now()}.ogg`)
     writeFileSync(tmpPath, audioBuffer)
 
     try {
+      const { toFile } = await import('openai/uploads')
+      const file = await toFile(readFileSync(tmpPath), 'voice.ogg', { type: 'audio/ogg' })
       const transcription = await this.openai.audio.transcriptions.create({
         model: 'whisper-1',
-        file: createReadStream(tmpPath),
+        file,
         language: 'es',
         response_format: 'text',
       })
       return this.processText(transcription)
     } catch (e: any) {
-      console.error('Whisper API error:', e)
+      console.error('Whisper API error:', e.message, e.status, e.code)
       return { text: '❌ No pude transcribir el audio. ¿Probaste con un audio más corto?' }
     } finally {
       try { unlinkSync(tmpPath) } catch {}
