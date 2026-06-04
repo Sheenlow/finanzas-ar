@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { accountsService } from '@/services/accountsService';
 import { transactionsService } from '@/services/transactionsService';
 import { reportService } from '@/services/reportService';
@@ -67,10 +68,34 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const reportData = reportService.getFixedExpenses(transactions);
 
-  const { data: botConfig } = await supabase
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  let { data: botConfig } = await supabase
     .from('bot_config')
     .select('link_token')
     .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!botConfig) {
+    const { data: created } = await adminClient
+      .from('bot_config')
+      .insert({ user_id: user.id })
+      .select('link_token')
+      .single();
+    botConfig = created;
+  } else if (!botConfig.link_token) {
+    const newToken = crypto.randomUUID();
+    await adminClient.from('bot_config').update({ link_token: newToken }).eq('user_id', user.id);
+    botConfig = { link_token: newToken };
+  }
+
+  const { data: botLink } = await supabase
+    .from('bot_users')
+    .select('telegram_user_id')
+    .eq('supabase_user_id', user.id)
     .maybeSingle();
 
   const now = new Date();
@@ -183,7 +208,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <MonthSelector />
         </header>
 
-        {botConfig?.link_token && (
+        {botLink ? (
+          <section className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5 mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🤖</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Bot de Telegram vinculado</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Telegram ID: {botLink.telegram_user_id}</p>
+              </div>
+            </div>
+          </section>
+        ) : botConfig?.link_token ? (
           <section className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-5 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <span className="text-2xl">🤖</span>
@@ -195,7 +230,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <span className="text-xs text-muted-foreground whitespace-nowrap">/vincular {botConfig.link_token.toString().slice(0, 8)}...</span>
             </div>
           </section>
-        )}
+        ) : null}
 
         <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />
 

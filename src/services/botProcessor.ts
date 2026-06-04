@@ -334,11 +334,39 @@ También podés mandar audios 🎤
         const token = text.slice('/vincular'.length).trim()
         if (!token || token.length < 30) return '❌ Código inválido. Copialo desde la app (Dashboard → Vinculá tu bot).'
 
-        const { data: cfg } = await this.supabase.from('bot_config').select('user_id').eq('link_token', token).maybeSingle()
-        if (!cfg) return '❌ Código no encontrado. Asegurate de copiarlo completo desde la app.'
+        const { data: cfg } = await this.supabase.from('bot_config').select('user_id, link_token').eq('link_token', token).maybeSingle()
+        if (!cfg) return '❌ Código inválido o ya fue usado. Andá al Dashboard para generar uno nuevo.'
 
-        await this.supabase.from('bot_users').upsert({ telegram_user_id: telegramUserId, supabase_user_id: cfg.user_id }, { onConflict: 'telegram_user_id' })
-        return '✅ ¡Cuenta vinculada correctamente! Ya podés registrar gastos.\n\nProbá: /help para ver cómo usarme.'
+        // Check if this supabase account is already linked to a different Telegram
+        const { data: existingLink } = await this.supabase.from('bot_users')
+          .select('telegram_user_id')
+          .eq('supabase_user_id', cfg.user_id)
+          .maybeSingle()
+
+        if (existingLink && existingLink.telegram_user_id !== telegramUserId) {
+          return '❌ Esta cuenta de FinanzasAR ya está vinculada a otro Telegram.'
+        }
+
+        await this.supabase.from('bot_users').upsert(
+          { telegram_user_id: telegramUserId, supabase_user_id: cfg.user_id },
+          { onConflict: 'telegram_user_id' }
+        )
+
+        // Invalidate token (single-use)
+        await this.supabase.from('bot_config')
+          .update({ link_token: null, updated_at: new Date().toISOString() })
+          .eq('user_id', cfg.user_id)
+
+        // Get user name for greeting
+        const { data: profile } = await this.supabase.from('profiles')
+          .select('full_name')
+          .eq('id', cfg.user_id)
+          .maybeSingle()
+
+        const name = profile?.full_name?.split(' ')[0] || ''
+        const greeting = name ? `¡Vinculado correctamente, ${name}!` : '¡Cuenta vinculada correctamente!'
+
+        return `✅ ${greeting}\n\nYa podés registrar gastos en tu cuenta de FinanzasAR.\nProbá: /help para ver cómo usarme.`
       }
       case '/config': {
         const rest = text.slice('/config'.length).trim()
