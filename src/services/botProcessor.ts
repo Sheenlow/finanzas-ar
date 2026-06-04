@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { householdSplitService } from './householdSplitService'
 
 interface Account {
   id: string
@@ -29,6 +30,9 @@ interface ParsedTransaction {
   paymentMethod: string
   installments: number
   categoryName: string | null
+  subscriptionFrequency: string | null
+  householdId: string | null
+  isSharing: boolean
 }
 
 interface TransactionRow {
@@ -44,7 +48,7 @@ interface TransactionRow {
   accounts?: { name: string } | null
 }
 
-type FlowState = 'ask_cuotas' | 'ask_cuotas_count' | 'select_account' | 'select_category' | 'confirm' | 'edit'
+type FlowState = 'ask_cuotas' | 'ask_cuotas_count' | 'ask_subscription' | 'ask_frequency' | 'select_account' | 'select_category' | 'ask_household_show' | 'ask_household_share' | 'confirm' | 'edit'
 
 function normalizeAmount(raw: string): number {
   return parseFloat(raw.replace(/\./g, '').replace(',', '.'))
@@ -186,6 +190,7 @@ function parseText(
   return {
     description: description.length > 100 ? description.slice(0, 100) : description,
     amount, currency, type, accountId, accountName, paymentMethod, installments, categoryName,
+    subscriptionFrequency: null, householdId: null, isSharing: false,
   }
 }
 
@@ -220,6 +225,7 @@ Moneda default ARS. paymentMethod: efectivo/cash→cash, débito/debito→card, 
     accountId: null, accountName: parsed.accountName || null,
     paymentMethod: parsed.paymentMethod || 'cash', installments: parsed.installments || 0,
     categoryName: parsed.categoryName || null,
+    subscriptionFrequency: null, householdId: null, isSharing: false,
   }
 }
 
@@ -273,6 +279,14 @@ export class BotProcessor {
     const topMethod = methods.sort((a, b) => methods.filter(x => x === b).length - methods.filter(x => x === a).length)[0] || 'cash'
     const accRow = data.find((t: any) => t.account_id === topAccount)
     return { accountId: topAccount, accountName: (accRow as any)?.accounts?.name || null, paymentMethod: topMethod }
+  }
+
+  private async getUserHousehold(): Promise<string | null> {
+    const { data } = await this.supabase.from('household_members')
+      .select('household_id')
+      .eq('user_id', this.userId)
+      .maybeSingle()
+    return data?.household_id || null
   }
 
   private async saveKeywordRule(keyword: string, field: 'category_name' | 'account_name' | 'type', value: string) {
@@ -449,20 +463,42 @@ También podés mandar audios 🎤
       ? Math.round((parsed.amount / parsed.installments) * 100) / 100
       : parsed.amount
 
+    const freq = parsed.subscriptionFrequency || (parsed.type === 'subscription' ? 'monthly' : null)
+
     const { data, error } = await this.supabase.from('transactions').insert([{
       user_id: this.userId, account_id: parsed.accountId, category_id: categoryId,
       amount: installmentAmount, currency: parsed.currency, type: parsed.type,
       description: parsed.description, transaction_date: dateStr, payment_method: parsed.paymentMethod,
       is_installment: parsed.installments > 0, installments_total: parsed.installments || 1, installment_number: 1,
-      subscription_frequency: parsed.type === 'subscription' ? 'monthly' : null,
+      subscription_frequency: freq as any,
+      household_id: parsed.householdId || null,
     }]).select('id').single()
     if (error) { console.error('Error creating transaction:', error); throw new Error('Error al guardar el gasto') }
 
+    // Update account balance
     if (parsed.accountId) {
       const { data: account } = await this.supabase.from('accounts').select('balance').eq('id', parsed.accountId).single()
       if (account) {
         await this.supabase.from('accounts').update({ balance: account.balance - installmentAmount }).eq('id', parsed.accountId)
       }
+    }
+
+    // Split with household if sharing
+    if (parsed.householdId && parsed.isSharing && data) {
+      try {
+        const { data: members } = await this.supabase.from('household_members')
+          .select('id, user_id, split_percentage')
+          .eq('household_id', parsed.householdId)
+        const { data: incomes } = await this.supabase.from('household_incomes')
+          .select('user_id, monthly_income_ars')
+          .eq('household_id', parsed.householdId)
+        const incomeMap = new Map((incomes || []).map((i: any) => [i.user_id, i.monthly_income_ars]))
+
+        await householdSplitService.splitHouseholdExpense(
+          this.supabase, data.id, parsed.householdId, this.userId,
+          installmentAmount, parsed.currency as any, (members || []) as any, incomeMap
+        )
+      } catch {}
     }
 
     return data.id
@@ -498,6 +534,12 @@ También podés mandar audios 🎤
 
     if (parsed.accountName) parts.push(`[${parsed.accountName}]`)
     if (parsed.categoryName) parts.push(`#${parsed.categoryName}`)
+    if (parsed.subscriptionFrequency) {
+      const freqLabel: Record<string, string> = { monthly: 'Mensual', quarterly: 'Trimestral', biannual: 'Semestral', annual: 'Anual' }
+      parts.push(`🔁 ${freqLabel[parsed.subscriptionFrequency] || parsed.subscriptionFrequency}`)
+    }
+    if (parsed.householdId && parsed.isSharing) parts.push('🏠 Compartido')
+    else if (parsed.householdId) parts.push('🏠 Hogar')
     return parts.join(' · ')
   }
 
@@ -579,11 +621,19 @@ También podés mandar audios 🎤
     switch (action) {
       case 'cuotas':
         if (value === 'si') nextState = 'ask_cuotas_count'
-        else { pending.installments = 0; nextState = pending.accountId ? (pending.categoryName ? 'confirm' : 'select_category') : 'select_account' }
+        else { pending.installments = 0; nextState = this.computeNext(pending) }
         break
       case 'cuotas_n':
         pending.installments = parseInt(value) || 0
-        nextState = pending.accountId ? (pending.categoryName ? 'confirm' : 'select_category') : 'select_account'
+        nextState = this.computeNext(pending)
+        break
+      case 'subscription':
+        if (value === 'si') nextState = 'ask_frequency'
+        else { pending.type = 'expense'; pending.subscriptionFrequency = null; nextState = this.computeNext(pending) }
+        break
+      case 'frequency':
+        pending.subscriptionFrequency = value
+        nextState = this.computeNext(pending)
         break
       case 'acct':
         pending.accountId = value
@@ -592,10 +642,18 @@ También podés mandar audios 🎤
         if (!pending.paymentMethod || pending.paymentMethod === 'cash') {
           if (acc && acc.type === 'bank') pending.paymentMethod = 'card'
         }
-        nextState = pending.categoryName ? 'confirm' : 'select_category'
+        nextState = this.computeNext(pending)
         break
       case 'cat':
         pending.categoryName = decodeURIComponent(value)
+        nextState = this.computeNext(pending)
+        break
+      case 'household_show':
+        if (value === 'si') nextState = 'ask_household_share'
+        else { pending.householdId = null; pending.isSharing = false; nextState = 'confirm' }
+        break
+      case 'household_share':
+        pending.isSharing = value === 'si'
         nextState = 'confirm'
         break
       case 'edit':
@@ -629,6 +687,14 @@ También podés mandar audios 🎤
 
   // ──── State renderer ────────────────────────────────
 
+  private computeNext(pending: ParsedTransaction): FlowState {
+    if (pending.type === 'subscription' && !pending.subscriptionFrequency) return 'ask_subscription'
+    if (!pending.accountId) return 'select_account'
+    if (!pending.categoryName) return 'select_category'
+    if (pending.householdId && typeof pending.isSharing === 'undefined') return 'ask_household_show'
+    return 'confirm'
+  }
+
   private async renderState(state: FlowState, pending: ParsedTransaction): Promise<{ text: string; keyboard: { text: string; callback_data: string }[][] }> {
     switch (state) {
       case 'ask_cuotas':
@@ -656,6 +722,37 @@ También podés mandar audios 🎤
         return { text: `🏦 ¿En qué cuenta?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`, keyboard: buttons }
       }
 
+      case 'ask_subscription':
+        return {
+          text: `🔁 ¿Es un gasto recurrente (suscripción)?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          keyboard: [[{ text: 'Sí, recurrente', callback_data: 'new:subscription:si' }, { text: 'No, único', callback_data: 'new:subscription:no' }],
+          [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
+        }
+
+      case 'ask_frequency':
+        return {
+          text: `¿Cada cuánto se repite?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          keyboard: [
+            [{ text: 'Mensual', callback_data: 'new:frequency:monthly' }, { text: 'Trimestral', callback_data: 'new:frequency:quarterly' }],
+            [{ text: 'Semestral', callback_data: 'new:frequency:biannual' }, { text: 'Anual', callback_data: 'new:frequency:annual' }],
+            [{ text: 'Cancelar', callback_data: 'new:cancel' }],
+          ],
+        }
+
+      case 'ask_household_show':
+        return {
+          text: `🏠 ¿Mostrar en el hogar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          keyboard: [[{ text: 'Sí, mostrar', callback_data: 'new:household_show:si' }, { text: 'No', callback_data: 'new:household_show:no' }],
+          [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
+        }
+
+      case 'ask_household_share':
+        return {
+          text: `🤝 ¿Compartir el gasto con el hogar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          keyboard: [[{ text: 'Sí, compartir', callback_data: 'new:household_share:si' }, { text: 'No, solo mostrar', callback_data: 'new:household_share:no' }],
+          [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
+        }
+
       case 'select_category': {
         const categories = await this.getCategories()
         const buttons: { text: string; callback_data: string }[][] = []
@@ -679,6 +776,12 @@ También podés mandar audios 🎤
         if (pending.paymentMethod === 'card') lines.push('Pago: Tarjeta')
         else if (pending.paymentMethod === 'transfer') lines.push('Pago: Transferencia')
         else lines.push('Pago: Efectivo')
+        if (pending.subscriptionFrequency) {
+          const freqLabel: Record<string, string> = { monthly: 'Mensual', quarterly: 'Trimestral', biannual: 'Semestral', annual: 'Anual' }
+          lines.push(`🔁 ${freqLabel[pending.subscriptionFrequency]}`)
+        }
+        if (pending.householdId && pending.isSharing) lines.push('🏠 Compartido con el hogar')
+        else if (pending.householdId) lines.push('🏠 Visible en el hogar')
         return {
           text: `¿Confirmás el gasto?\n\n${lines.join('\n')}`,
           keyboard: [[{ text: '✅ Confirmar', callback_data: 'new:confirm:yes' }, { text: '✏️ Editar', callback_data: 'new:confirm:edit' }],
@@ -694,6 +797,15 @@ También podés mandar audios 🎤
         else lines.push(`🏦 <b>Cuenta:</b> sin asignar`)
         if (pending.installments > 0) lines.push(`💳 <b>Cuotas:</b> ${pending.installments}`)
         else lines.push(`💳 <b>Cuotas:</b> pago único`)
+        if (pending.subscriptionFrequency) {
+          const freqLabel: Record<string, string> = { monthly: 'Mensual', quarterly: 'Trimestral', biannual: 'Semestral', annual: 'Anual' }
+          lines.push(`🔁 <b>Recurrencia:</b> ${freqLabel[pending.subscriptionFrequency]}`)
+        } else if (pending.type === 'subscription') {
+          lines.push(`🔁 <b>Recurrencia:</b> sin definir`)
+        }
+        if (pending.householdId) {
+          lines.push(pending.isSharing ? '🏠 <b>Hogar:</b> Compartido' : '🏠 <b>Hogar:</b> Visible')
+        }
         return {
           text: `¿Qué querés editar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}\n\n${lines.join('\n')}`,
           keyboard: [
@@ -742,8 +854,10 @@ También podés mandar audios 🎤
     const hasAccount = !!parsed.accountId
     const hasCategory = !!parsed.categoryName
     const needsCuotasQuestion = isCardPayment(text) && parsed.installments === 0
+    const isSubscription = parsed.type === 'subscription'
+    const householdId = await this.getUserHousehold()
 
-    // Fallback defaults for fields not provided
+    // Fallback defaults
     if (!parsed.paymentMethod || parsed.paymentMethod === 'cash') {
       if (parsed.accountId) {
         const acc = accounts.find(a => a.id === parsed.accountId)
@@ -752,13 +866,23 @@ También podés mandar audios 🎤
     }
     if (!parsed.paymentMethod) parsed.paymentMethod = defaults.paymentMethod
 
+    // Preset household-related fields
+    parsed.householdId = householdId
+    if (householdId) {
+      parsed.isSharing = false
+    }
+
     let firstState: FlowState
     if (needsCuotasQuestion) {
       firstState = 'ask_cuotas'
+    } else if (isSubscription) {
+      firstState = 'ask_subscription'
     } else if (!hasAccount) {
       firstState = 'select_account'
     } else if (!hasCategory) {
       firstState = 'select_category'
+    } else if (householdId) {
+      firstState = 'ask_household_show'
     } else {
       firstState = 'confirm'
     }

@@ -496,7 +496,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
               type="button"
               onClick={() => setIsHouseholdExpense(!isHouseholdExpense)}
               className={cn(
-                "w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ml-4",
+                "w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm font-medium transition-all",
                 isHouseholdExpense
                   ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-700"
                   : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
@@ -519,7 +519,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
           )}
 
           {isHouseholdExpense && splitPreview.length > 0 && (
-            <div className="p-3 bg-indigo-50/50 border border-indigo-200/50 rounded-xl space-y-1 ml-4">
+            <div className="p-3 bg-indigo-50/50 border border-indigo-200/50 rounded-xl space-y-1">
               <p className="text-xs text-indigo-700 font-medium mb-1">División del gasto</p>
               {splitPreview.map(p => (
                 <div key={p.user_id} className="flex justify-between text-sm">
