@@ -901,7 +901,10 @@ También podés mandar audios 🎤
     const telegram = new TelegramClient(telegramToken)
     const { file_path } = await telegram.getFile(fileId)
     const audioBuffer = await telegram.downloadFile(file_path)
-    const file = new File([new Uint8Array(audioBuffer)], 'voice.ogg', { type: 'audio/ogg' })
+
+    const { toFile } = await import('openai/uploads')
+    const file = await toFile(audioBuffer, 'voice.ogg', { type: 'audio/ogg' })
+
     const transcription = await this.openai.audio.transcriptions.create({ model: 'whisper-1', file, language: 'es', response_format: 'text' })
     return this.processText(transcription)
   }
