@@ -67,6 +67,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const reportData = reportService.getFixedExpenses(transactions);
 
+  const { data: botConfig } = await supabase
+    .from('bot_config')
+    .select('link_token')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const todayStr = now.toISOString().slice(0, 10);
@@ -176,6 +182,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </div>
             <MonthSelector />
         </header>
+
+        {botConfig?.link_token && (
+          <section className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-5 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <span className="text-2xl">🤖</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">Vinculá tu bot de Telegram</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Enviá este código al bot para vincular tu cuenta</p>
+                <code className="mt-1.5 inline-block text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-mono select-all">{botConfig.link_token}</code>
+              </div>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">/vincular {botConfig.link_token.toString().slice(0, 8)}...</span>
+            </div>
+          </section>
+        )}
 
         <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />
 

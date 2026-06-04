@@ -296,9 +296,9 @@ export class BotProcessor {
 
   // ──── Commands ──────────────────────────────────────
 
-  private isCommand(text: string): boolean { return /^\/(start|help|stats|list|balance|config)\b/.test(text.trim()) }
+  private isCommand(text: string): boolean { return /^\/(start|help|stats|list|balance|config|vincular)\b/.test(text.trim()) }
 
-  async handleCommand(text: string): Promise<string> {
+  async handleCommand(text: string, telegramUserId?: number): Promise<string> {
     const cmd = text.trim().split(/\s+/)[0].toLowerCase()
     switch (cmd) {
       case '/start': case '/help':
@@ -329,6 +329,17 @@ También podés mandar audios 🎤
       case '/stats': return await this.getStatsMessage()
       case '/list': return await this.getListMessage()
       case '/balance': return await this.getBalancesMessage()
+      case '/vincular': {
+        if (!telegramUserId) return '❌ Error: no se pudo identificar tu usuario de Telegram.'
+        const token = text.slice('/vincular'.length).trim()
+        if (!token || token.length < 30) return '❌ Código inválido. Copialo desde la app (Dashboard → Vinculá tu bot).'
+
+        const { data: cfg } = await this.supabase.from('bot_config').select('user_id').eq('link_token', token).maybeSingle()
+        if (!cfg) return '❌ Código no encontrado. Asegurate de copiarlo completo desde la app.'
+
+        await this.supabase.from('bot_users').upsert({ telegram_user_id: telegramUserId, supabase_user_id: cfg.user_id }, { onConflict: 'telegram_user_id' })
+        return '✅ ¡Cuenta vinculada correctamente! Ya podés registrar gastos.\n\nProbá: /help para ver cómo usarme.'
+      }
       case '/config': {
         const rest = text.slice('/config'.length).trim()
         if (rest) {
