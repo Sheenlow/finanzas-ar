@@ -40,9 +40,10 @@ interface Props {
   initialSettlements?: any[]
   profileMap?: Map<string, any>
   initialHouseholdGoals?: any[]
+  sharedTransactionIds?: string[]
 }
 
-export function HouseholdManager({ initialHousehold, initialMembers, myRole, userId, userEmail, initialTransactions = [], initialSettlements = [], profileMap = new Map(), initialHouseholdGoals = [] }: Props) {
+export function HouseholdManager({ initialHousehold, initialMembers, myRole, userId, userEmail, initialTransactions = [], initialSettlements = [], profileMap = new Map(), initialHouseholdGoals = [], sharedTransactionIds = [] }: Props) {
   const [household, setHousehold] = useState<Household | null>(initialHousehold)
   const [members, setMembers] = useState<Member[]>(initialMembers)
   const [householdIncomes, setHouseholdIncomes] = useState<HouseholdIncome[]>([])
@@ -648,6 +649,7 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
                   <th className="text-left py-2 px-3 font-medium">Quién pagó</th>
                   <th className="text-center py-2 px-3 font-medium">Cuota</th>
                   <th className="text-right py-2 px-3 font-medium">Monto</th>
+                  <th className="text-center py-2 px-3 font-medium">Compartido</th>
                   <th className="text-right py-2 px-3 font-medium">Fecha</th>
                 </tr>
               </thead>
@@ -663,6 +665,11 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
                       </td>
                       <td className={`py-2 px-3 text-right font-semibold ${t.type === 'expense' ? 'text-rose-600' : 'text-emerald-600'}`}>
                         {new Intl.NumberFormat('es-AR', { style: 'currency', currency: t.currency || 'ARS' }).format(t.amount)}
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sharedTransactionIds.includes(t.id) ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'}`}>
+                          {sharedTransactionIds.includes(t.id) ? 'Sí' : 'No'}
+                        </span>
                       </td>
                       <td className="py-2 px-3 text-right text-muted-foreground text-xs">
                         {new Date(t.transaction_date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })}

@@ -32,6 +32,7 @@ export default async function HogarPage() {
   let transactions: any[] = [];
   let settlements: any[] = [];
   let householdGoals: any[] = [];
+  let sharedTransactionIds: string[] = [];
   let profileMap = new Map<string, any>();
 
   if (household) {
@@ -73,6 +74,12 @@ export default async function HogarPage() {
     settlements = s || [];
 
     householdGoals = await savingsGoalsService.getForHousehold(supabase, household.id);
+
+    const { data: sharedRecs } = await adminClient
+      .from('household_share_records')
+      .select('transaction_id')
+      .eq('household_id', household.id);
+    sharedTransactionIds = Array.from(new Set((sharedRecs || []).map((r: any) => r.transaction_id)));
   }
 
   return (
@@ -88,6 +95,7 @@ export default async function HogarPage() {
         initialSettlements={settlements}
         profileMap={profileMap}
         initialHouseholdGoals={householdGoals}
+        sharedTransactionIds={sharedTransactionIds}
       />
     </div>
   );
