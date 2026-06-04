@@ -933,8 +933,9 @@ También podés mandar audios 🎤
       })
       return this.processText(transcription)
     } catch (e: any) {
-      console.error('Whisper API error:', e.message, e.status, e.code)
-      return { text: '❌ No pude transcribir el audio. ¿Probaste con un audio más corto?' }
+      console.error('Whisper API error:', e.message, e.status, e.code, e.type)
+      const detail = e?.error?.message || e.message || String(e)
+      return { text: `❌ Error de transcripción: ${detail.slice(0, 200)}` }
     } finally {
       try { unlinkSync(tmpPath) } catch {}
     }
