@@ -248,6 +248,33 @@ export function AyudaContent() {
         .filter(section => section.items.length > 0)
     : sections
 
+  const renderSection = (section: Section) => (
+    <details
+      key={section.id}
+      className="group bg-card border border-border rounded-2xl overflow-hidden"
+    >
+      <summary className="flex items-center gap-3 px-5 py-4 cursor-pointer list-none hover:bg-muted/30 transition-colors select-none">
+        <section.icon className="w-5 h-5 text-primary shrink-0" />
+        <span className="text-base font-semibold flex-1">{section.title}</span>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          {section.items.length}
+        </span>
+        <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+      </summary>
+      <div className="px-5 pb-4 space-y-4">
+        {section.items.map((item, i) => (
+          <div key={i} className="border-t border-border/50 pt-4 first:border-0 first:pt-0">
+            <p className="text-sm font-medium text-foreground mb-1.5">{item.question}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
+          </div>
+        ))}
+      </div>
+    </details>
+  )
+
+  const leftSections = filteredSections.filter((_, i) => i % 2 === 0)
+  const rightSections = filteredSections.filter((_, i) => i % 2 === 1)
+
   return (
     <div className="space-y-10">
       <div className="space-y-2">
@@ -274,30 +301,13 @@ export function AyudaContent() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredSections.map(section => (
-          <details
-            key={section.id}
-            className="group bg-card border border-border rounded-2xl overflow-hidden"
-          >
-            <summary className="flex items-center gap-3 px-5 py-4 cursor-pointer list-none hover:bg-muted/30 transition-colors select-none">
-              <section.icon className="w-5 h-5 text-primary shrink-0" />
-              <span className="text-base font-semibold flex-1">{section.title}</span>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {section.items.length}
-              </span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
-            </summary>
-            <div className="px-5 pb-4 space-y-4">
-              {section.items.map((item, i) => (
-                <div key={i} className="border-t border-border/50 pt-4 first:border-0 first:pt-0">
-                  <p className="text-sm font-medium text-foreground mb-1.5">{item.question}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
-                </div>
-              ))}
-            </div>
-          </details>
-        ))}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 flex flex-col gap-4">
+          {leftSections.map(renderSection)}
+        </div>
+        <div className="flex-1 flex flex-col gap-4">
+          {rightSections.map(renderSection)}
+        </div>
       </div>
 
       <div className="bg-muted/30 border border-border rounded-2xl p-5 text-center">
