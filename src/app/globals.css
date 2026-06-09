@@ -100,3 +100,40 @@
     padding: 0.5rem 0.5rem;
   }
 }
+
+/* ─── Scrollbar personalizado ─── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(40 20% 85%) transparent;
+}
+
+.dark * {
+  scrollbar-color: hsl(240 5% 28%) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(40 20% 80%);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(40 20% 65%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(240 5% 28%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 5% 40%);
+}
