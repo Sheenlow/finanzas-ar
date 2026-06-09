@@ -37,59 +37,92 @@ const WELCOME_HTML = (name: string) => `<!DOCTYPE html>
 </body>
 </html>`
 
+export async function GET() {
+  const apiKey = process.env.RESEND_API_KEY
+  return NextResponse.json({
+    status: 'ok',
+    resend_configured: !!apiKey,
+    supabase_configured: !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+  })
+}
+
 export async function POST(request: NextRequest) {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.error('[welcome-email] RESEND_API_KEY not set in environment')
+    return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 })
+  }
+
+  let body: any
   try {
-    const apiKey = process.env.RESEND_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 })
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  const profileId: string | undefined = body?.record?.id
+  if (!profileId) {
+    return NextResponse.json({ error: 'Missing record.id in webhook payload' }, { status: 400 })
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+
+  let email: string | undefined
+  try {
+    const { data: authUser, error } = await adminClient.auth.admin.getUserById(profileId)
+    if (error) {
+      console.error('[welcome-email] getUserById error:', error)
+      return NextResponse.json({ error: 'Failed to fetch user from auth', detail: error.message }, { status: 500 })
     }
+    email = authUser?.user?.email
+  } catch (err: any) {
+    console.error('[welcome-email] getUserById exception:', err)
+    return NextResponse.json({ error: 'Failed to fetch user from auth', detail: err.message }, { status: 500 })
+  }
 
-    const body = await request.json()
+  if (!email) {
+    return NextResponse.json({ skipped: 'No email found for profile', profileId }, { status: 200 })
+  }
 
-    const profileId: string = body.record?.id
-    if (!profileId) {
-      return NextResponse.json({ error: 'Missing profile id' }, { status: 400 })
-    }
+  const fullName = body.record.full_name || email.split('@')[0]
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const from = process.env.RESEND_FROM_EMAIL || 'Finanzas AR <delivered@resend.dev>'
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-
-    const { data: authUser } = await adminClient.auth.admin.getUserById(profileId)
-    const email = authUser?.user?.email
-    if (!email) {
-      return NextResponse.json({ skipped: 'No email found' }, { status: 200 })
-    }
-
-    const fullName = body.record?.full_name || email.split('@')[0]
-
-    const res = await fetch('https://api.resend.com/emails', {
+  let res: Response
+  try {
+    res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Finanzas AR <onboarding@resend.dev>',
+        from,
         to: email,
         subject: 'Bienvenido a Finanzas AR',
         html: WELCOME_HTML(fullName),
       }),
     })
-
-    if (!res.ok) {
-      const err = await res.json()
-      console.error('Resend error:', err)
-      return NextResponse.json({ error: err }, { status: 500 })
-    }
-
-    const data = await res.json()
-    return NextResponse.json({ ok: true, id: data?.id })
   } catch (err: any) {
-    console.error('Webhook error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error('[welcome-email] Resend fetch failed:', err)
+    return NextResponse.json({ error: 'Failed to reach Resend API', detail: err.message }, { status: 502 })
   }
+
+  if (!res.ok) {
+    let errBody: any = {}
+    try { errBody = await res.json() } catch {}
+    console.error('[welcome-email] Resend API error:', res.status, errBody)
+    return NextResponse.json({
+      error: 'Resend API rejected the email',
+      status: res.status,
+      detail: errBody,
+    }, { status: 502 })
+  }
+
+  const data = await res.json()
+  return NextResponse.json({ ok: true, id: data?.id })
 }
