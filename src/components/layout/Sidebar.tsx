@@ -2,7 +2,7 @@
 
 import { authService } from '@/services/authService';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Wallet, ArrowRightLeft, Target, LogOut, PieChart, Home, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Wallet, ArrowRightLeft, Target, LogOut, PieChart, Home, Moon, Sun, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { UserMenu } from '@/components/UserMenu';
@@ -25,6 +25,7 @@ export function Sidebar() {
     { name: 'Consumos', href: '/transactions', icon: ArrowRightLeft },
     { name: 'Metas', href: '/goals', icon: Target },
     { name: 'Hogar', href: '/hogar', icon: Home },
+    { name: 'Ayuda', href: '/ayuda', icon: HelpCircle },
   ];
 
   return (

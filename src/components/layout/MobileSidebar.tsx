@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Wallet, ArrowRightLeft, Target, Home, Menu, X, PieChart, Moon, Sun } from 'lucide-react'
+import { LayoutDashboard, Wallet, ArrowRightLeft, Target, Home, Menu, X, PieChart, Moon, Sun, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserMenu } from '@/components/UserMenu'
 import { authService } from '@/services/authService'
@@ -29,6 +29,7 @@ export function MobileSidebar() {
     { name: 'Consumos', href: '/transactions', icon: ArrowRightLeft },
     { name: 'Metas', href: '/goals', icon: Target },
     { name: 'Hogar', href: '/hogar', icon: Home },
+    { name: 'Ayuda', href: '/ayuda', icon: HelpCircle },
   ]
 
   return (

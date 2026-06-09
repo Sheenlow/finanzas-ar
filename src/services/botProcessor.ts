@@ -310,16 +310,16 @@ export class BotProcessor {
 
   // ──── Commands ──────────────────────────────────────
 
-  private isCommand(text: string): boolean { return /^\/(start|help|stats|list|balance|config|vincular|desvincular)\b/.test(text.trim()) }
+  private isCommand(text: string): boolean { return /^\/(start|help|ayuda|stats|list|balance|config|vincular|desvincular)\b/.test(text.trim()) }
 
   async handleCommand(text: string, telegramUserId?: number): Promise<string> {
     const cmd = text.trim().split(/\s+/)[0].toLowerCase()
     switch (cmd) {
-      case '/start': case '/help':
-        return `<b>🤖 ¿Cómo usarme?</b>
+      case '/start': case '/help': case '/ayuda':
+        return `<b>🤖 ¿Cómo usar el bot de Finanzas AR?</b>
 
-<b>Para gastos, escribí:</b>
-[descripción] [monto] [medio de pago]
+<b>Registrar un gasto por texto:</b>
+Escribí: [descripción] [monto] [medio de pago]
 
 <b>Medios de pago:</b>
 • efectivo
@@ -328,19 +328,33 @@ export class BotProcessor {
 • transferencia
 
 <b>Ejemplos:</b>
-• Supermercado 8000 en Efectivo
+• Supermercado 8000 efectivo
 • Netflix 12 USD débito suscripción
 • Nafta 5000 crédito 3 cuotas
 • Zapatillas 25000 crédito
 
-También podés mandar audios 🎤
+<b>Registrar un gasto por voz:</b>
+Mandá un audio describiendo el gasto. El bot lo transcribe y procesa automáticamente.
 
 <b>Comandos:</b>
-/stats — resumen del mes
-/list — últimos gastos
-/balance — saldo de cuentas
-/config — personalizar IA
-/desvincular — desvincular cuenta`
+/stats — resumen de gastos del mes
+/list — últimos 10 gastos
+/balance — saldo de todas tus cuentas
+/config — personalizar cómo la IA interpreta tus gastos
+/ayuda — esta guía
+/desvincular — desvincular tu cuenta
+
+<b>¿Cómo aprende el bot?</b>
+Cuando corregís una categoría o cuenta después de confirmar un gasto, el bot aprende de esa corrección. La próxima vez que uses palabras similares, las va a asignar automáticamente.
+
+<b>¿Cómo vinculo mi cuenta?</b>
+Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo acá: /vincular TU-CODIGO
+
+<b>Consejos:</b>
+• Mencioná el medio de pago para agilizar (efectivo, débito, crédito).
+• Si pagás con tarjeta, el bot te pregunta si es en cuotas.
+• Usá /config para enseñarle tus cuentas y preferencias.
+• Los audios funcionan mejor si hablás claro y mencionás el monto.`
       case '/stats': return await this.getStatsMessage()
       case '/list': return await this.getListMessage()
       case '/balance': return await this.getBalancesMessage()
@@ -615,7 +629,7 @@ También podés mandar audios 🎤
     const prev = await this.getPending()
     if (!prev) return { text: '❓ No hay una operación pendiente. Empezá de nuevo con un gasto.' }
 
-    let pending = { ...prev.pending }
+    const pending = { ...prev.pending }
     let nextState: FlowState = prev.state
 
     switch (action) {
