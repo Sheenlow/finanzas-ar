@@ -23,7 +23,6 @@
     "react-dom": "19.2.4",
     "react-google-recaptcha-v3": "^1.11.0",
     "recharts": "^3.8.1",
-    "resend": "^6.12.4",
     "tailwind-merge": "^3.0.1",
     "zxcvbn": "^4.4.2"
   },

@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
-const WELCOME_HTML = (name: string) => `
-<!DOCTYPE html>
+const WELCOME_HTML = (name: string) => `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family: system-ui, sans-serif; background: #fafafa; padding: 40px;">
@@ -13,13 +9,10 @@ const WELCOME_HTML = (name: string) => `
     <div style="text-align: center; margin-bottom: 24px;">
       <h1 style="color: #0ea5e9; font-size: 24px; margin: 0;">Finanzas AR</h1>
     </div>
-
     <h2 style="color: #1e293b; font-size: 20px; margin-bottom: 16px;">Bienvenido${name ? ` ${name.split(' ')[0]}` : ''}</h2>
-
     <p style="color: #475569; font-size: 15px; line-height: 1.6;">
       Tu cuenta fue creada exitosamente. Ya podes empezar a gestionar tus finanzas personales en Argentina.
     </p>
-
     <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 16px; margin: 24px 0;">
       <p style="color: #0369a1; font-size: 13px; margin: 0 0 8px;"><strong>Primeros pasos</strong></p>
       <p style="color: #0369a1; font-size: 13px; margin: 0;">
@@ -28,25 +21,21 @@ const WELCOME_HTML = (name: string) => `
         3. Explora el Dashboard para ver estadisticas y tendencias
       </p>
     </div>
-
     <p style="color: #475569; font-size: 15px; line-height: 1.6;">
       Tambien podes vincular el <strong>Bot de Telegram</strong> para registrar gastos por texto desde el chat.
     </p>
-
     <div style="text-align: center; margin-top: 32px;">
       <a href="https://finanzas-ar-app.vercel.app"
          style="display: inline-block; background: #0ea5e9; color: white; padding: 12px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
         Ir a Finanzas AR
       </a>
     </div>
-
     <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 32px;">
       Si no creaste esta cuenta, ignora este correo.
     </p>
   </div>
 </body>
-</html>
-`
+</html>`
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,18 +66,27 @@ export async function POST(request: NextRequest) {
 
     const fullName = body.record?.full_name || email.split('@')[0]
 
-    const { data, error } = await resend.emails.send({
-      from: 'Finanzas AR <welcome@finanzas-ar.com>',
-      to: email,
-      subject: 'Bienvenido a Finanzas AR',
-      html: WELCOME_HTML(fullName),
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Finanzas AR <onboarding@resend.dev>',
+        to: email,
+        subject: 'Bienvenido a Finanzas AR',
+        html: WELCOME_HTML(fullName),
+      }),
     })
 
-    if (error) {
-      console.error('Resend error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!res.ok) {
+      const err = await res.json()
+      console.error('Resend error:', err)
+      return NextResponse.json({ error: err }, { status: 500 })
     }
 
+    const data = await res.json()
     return NextResponse.json({ ok: true, id: data?.id })
   } catch (err: any) {
     console.error('Webhook error:', err)
