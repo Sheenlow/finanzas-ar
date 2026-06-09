@@ -165,8 +165,31 @@ export function MonthlyFixedExpensesReport({ transactions, selectedMonth, exchan
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm table-fixed border-collapse">
+      <div className="sm:hidden space-y-2">
+        {paginatedItems.map(t => {
+          const badge = getTypeBadge(t.type, t.is_installment, t.categories?.name)
+          return (
+            <div key={t.id} className="bg-secondary/30 rounded-xl p-4 flex flex-col gap-2">
+              <div className="flex justify-between items-start gap-2">
+                <span className="font-medium text-sm truncate flex-1">{t.description}</span>
+                <span className="font-semibold text-sm whitespace-nowrap">{t.amount.toLocaleString('es-AR', { style: 'currency', currency: t.currency || 'ARS' })}</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">{t.accounts?.name || '—'}</span>
+                {t.is_installment && (
+                  <span className="text-xs text-muted-foreground">Cuota {t.installment_number}/{t.installments_total}</span>
+                )}
+                <span className={cn("text-[10px] uppercase font-bold px-2 py-0.5 rounded-full", badge.className)}>
+                  {badge.label}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm table-fixed min-w-[700px] border-collapse">
           <thead>
             <tr className="border-b border-border/50 text-muted-foreground">
               {[
@@ -186,7 +209,7 @@ export function MonthlyFixedExpensesReport({ transactions, selectedMonth, exchan
                     )}
                   </div>
                   {activeFilter === header.key && (
-                    <div className="absolute top-full left-0 mt-2 p-4 bg-card border border-border rounded-xl shadow-xl w-48 z-20 space-y-3 text-left">
+                    <div className={cn("absolute top-full mt-2 p-4 bg-card border border-border rounded-xl shadow-xl w-48 z-20 space-y-3 text-left", header.key === 'type' || header.key === 'account' ? 'right-0' : 'left-0')}>
                       {header.key === 'minAmount' && (
                         <>
                           <input type="number" placeholder="Min" value={tempFilters.minAmount} onChange={e => setTempFilters({...tempFilters, minAmount: e.target.value})} className="w-full p-2 border border-border rounded-lg text-xs bg-background" />
@@ -257,20 +280,35 @@ export function MonthlyFixedExpensesReport({ transactions, selectedMonth, exchan
             <ChevronLeft size={16} />
           </button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={cn(
-                "w-8 h-8 text-xs rounded-lg font-medium transition-colors",
-                page === safePage
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-secondary text-muted-foreground"
-              )}
-            >
-              {page}
-            </button>
-          ))}
+          {(() => {
+            const pages: (number | '...')[] = []
+            const delta = 1
+            const left = Math.max(2, safePage - delta)
+            const right = Math.min(totalPages - 1, safePage + delta)
+            pages.push(1)
+            if (left > 2) pages.push('...')
+            for (let i = left; i <= right; i++) pages.push(i)
+            if (right < totalPages - 1) pages.push('...')
+            if (totalPages > 1) pages.push(totalPages)
+            return pages.map((page, idx) =>
+              page === '...' ? (
+                <span key={`dots-${idx}`} className="w-8 h-8 flex items-center justify-center text-xs text-muted-foreground">…</span>
+              ) : (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    "w-8 h-8 text-xs rounded-lg font-medium transition-colors",
+                    page === safePage
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary text-muted-foreground"
+                  )}
+                >
+                  {page}
+                </button>
+              )
+            )
+          })()}
 
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

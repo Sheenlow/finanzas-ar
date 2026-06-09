@@ -13,7 +13,7 @@ export default async function TransactionsPage() {
     return safeRedirect('/login');
   }
 
-  const transactions = await transactionsService.getAll(supabase, user.id);
+  const transactions = await transactionsService.getAll(supabase, user.id, 'created_at');
   
   // Group installments and subscriptions for display
   const groupedTransactions = transactions.reduce((acc: any[], t: any) => {

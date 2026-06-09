@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3'
+import { motion, AnimatePresence } from 'framer-motion'
 import zxcvbn from 'zxcvbn'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function SignUpForm() {
@@ -16,6 +17,7 @@ function SignUpForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   
   const { executeRecaptcha } = useGoogleReCaptcha()
   const router = useRouter()
@@ -64,8 +66,7 @@ function SignUpForm() {
 
       if (!res.ok) throw new Error(data.error || 'Error al registrar')
       
-      alert('Registro exitoso. Por favor revisa tu correo para confirmar tu cuenta.')
-      router.push('/login')
+      setShowSuccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrar')
     } finally {
@@ -74,6 +75,7 @@ function SignUpForm() {
   }
 
   return (
+    <>
     <form onSubmit={handleSignUp} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <input type="text" placeholder="Nombre" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-4 py-2 border border-border rounded-xl" required />
@@ -129,6 +131,45 @@ function SignUpForm() {
         {loading ? 'Registrando...' : 'Registrarse'}
       </button>
     </form>
+
+    <AnimatePresence>
+      {showSuccess && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 text-center space-y-4"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+              className="mx-auto w-14 h-14 rounded-full bg-income/10 flex items-center justify-center"
+            >
+              <CheckCircle2 className="w-8 h-8 text-income" />
+            </motion.div>
+            <h2 className="text-lg font-semibold">Cuenta creada</h2>
+            <p className="text-sm text-muted-foreground">
+              Registro exitoso. Por favor revisa tu correo para confirmar tu cuenta.
+            </p>
+            <button
+              onClick={() => router.push('/login')}
+              className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity"
+            >
+              Ir al inicio de sesión
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   )
 }
 

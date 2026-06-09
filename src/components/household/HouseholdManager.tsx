@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Plus, Mail, Percent, Copy, Check, UserMinus, Home, Loader2, DollarSign, RotateCcw, LogOut, Trash2, UserCog, AlertTriangle, Pencil, Wand2, ReceiptText, Clock, Download, Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { HouseholdMonthlyReport } from './HouseholdMonthlyReport'
 
 interface Household {
   id: string
@@ -41,9 +42,10 @@ interface Props {
   profileMap?: Map<string, any>
   initialHouseholdGoals?: any[]
   sharedTransactionIds?: string[]
+  initialMonthlyReport?: { name: string; value: number; color: string; percentage: string }[]
 }
 
-export function HouseholdManager({ initialHousehold, initialMembers, myRole, userId, userEmail, initialTransactions = [], initialSettlements = [], profileMap = new Map(), initialHouseholdGoals = [], sharedTransactionIds = [] }: Props) {
+export function HouseholdManager({ initialHousehold, initialMembers, myRole, userId, userEmail, initialTransactions = [], initialSettlements = [], profileMap = new Map(), initialHouseholdGoals = [], sharedTransactionIds = [], initialMonthlyReport = [] }: Props) {
   const [household, setHousehold] = useState<Household | null>(initialHousehold)
   const [members, setMembers] = useState<Member[]>(initialMembers)
   const [householdIncomes, setHouseholdIncomes] = useState<HouseholdIncome[]>([])
@@ -626,6 +628,8 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
           )}
         </div>
       )}
+
+      <HouseholdMonthlyReport data={initialMonthlyReport} />
 
       {initialTransactions.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">

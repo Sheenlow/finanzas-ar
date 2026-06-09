@@ -91,3 +91,12 @@
 .animate-slide-in {
   animation: slideIn 0.2s ease-out;
 }
+
+@media (max-width: 400px) {
+  table {
+    font-size: 0.7rem;
+  }
+  th, td {
+    padding: 0.5rem 0.5rem;
+  }
+}

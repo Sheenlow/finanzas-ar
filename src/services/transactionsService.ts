@@ -17,12 +17,12 @@ type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
 type TransactionUpdate = Database['public']['Tables']['transactions']['Update'];
 
 export const transactionsService = {
-  async getAll(supabase: any, userId: string) {
+  async getAll(supabase: any, userId: string, sortField: string = 'transaction_date') {
     const { data, error } = await supabase
       .from('transactions')
       .select('*, accounts!transactions_account_id_fkey(name), categories(name)')
       .eq('user_id', userId)
-      .order('transaction_date', { ascending: false });
+      .order(sortField, { ascending: false });
     
     if (error) throw error;
     return data;

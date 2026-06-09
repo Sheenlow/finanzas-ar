@@ -47,7 +47,7 @@ export function MonthlyTransactions({ transactions, categories }: Props) {
           <tbody>
             {paginatedItems.map((t: any) => (
               <tr key={t.id} className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors">
-                <td className="py-4 px-4 font-medium text-foreground">
+                <td className="py-4 px-4 font-medium text-foreground max-w-[140px] truncate">
                   {t.description}
                   {t.household_id && (
                     <span className="ml-2 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
@@ -72,7 +72,10 @@ export function MonthlyTransactions({ transactions, categories }: Props) {
                   )}
                 </td>
                 <td className="py-4 px-4 text-muted-foreground">
-                  {new Date(t.transaction_date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  {new Date(t.transaction_date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                  <span className="hidden sm:inline">
+                    {' '}{new Date(t.transaction_date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </td>
                 <td className="py-4 px-4 text-center text-muted-foreground">
                   {t.is_installment ? `${t.installment_number}/${t.installments_total}` : '-'}
@@ -101,20 +104,35 @@ export function MonthlyTransactions({ transactions, categories }: Props) {
             <ChevronLeft size={16} />
           </button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={cn(
-                "w-8 h-8 text-xs rounded-lg font-medium transition-colors",
-                page === safePage
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-secondary text-muted-foreground"
-              )}
-            >
-              {page}
-            </button>
-          ))}
+          {(() => {
+            const pages: (number | '...')[] = []
+            const delta = 1
+            const left = Math.max(2, safePage - delta)
+            const right = Math.min(totalPages - 1, safePage + delta)
+            pages.push(1)
+            if (left > 2) pages.push('...')
+            for (let i = left; i <= right; i++) pages.push(i)
+            if (right < totalPages - 1) pages.push('...')
+            if (totalPages > 1) pages.push(totalPages)
+            return pages.map((page, idx) =>
+              page === '...' ? (
+                <span key={`dots-${idx}`} className="w-8 h-8 flex items-center justify-center text-xs text-muted-foreground">…</span>
+              ) : (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    "w-8 h-8 text-xs rounded-lg font-medium transition-colors",
+                    page === safePage
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary text-muted-foreground"
+                  )}
+                >
+                  {page}
+                </button>
+              )
+            )
+          })()}
 
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

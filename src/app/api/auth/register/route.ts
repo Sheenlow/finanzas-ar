@@ -32,26 +32,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'La contraseña es demasiado débil' }, { status: 400 });
     }
 
-    // 3. Crear usuario con Supabase Admin (Service Role)
+    // 3. Crear usuario con el flujo estandar signUp (envia email de confirmacion)
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-        console.error('Supabase Admin Keys no configuradas');
-        return NextResponse.json({ error: 'Error de servidor: configuración incompleta' }, { status: 500 });
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !anonKey) {
+        console.error('Supabase Keys no configuradas');
+        return NextResponse.json({ error: 'Error de servidor: configuracion incompleta' }, { status: 500 });
     }
 
-    const supabaseAdmin = createClient(url, key);
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || 'http://localhost:3000';
+    const supabaseAnon = createClient(url, anonKey);
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabaseAnon.auth.signUp({
       email,
       password,
-      email_confirm: false, 
-      user_metadata: { full_name: `${firstName} ${lastName}` }
+      options: {
+        data: { full_name: `${firstName} ${lastName}` },
+        emailRedirectTo: `${siteUrl}/auth/callback`,
+      },
     });
 
     if (authError) {
         console.error('Error creando usuario en Supabase:', authError);
         return NextResponse.json({ error: authError.message }, { status: 400 });
+    }
+
+    if (!authData.user) {
+        return NextResponse.json({ error: 'No se pudo crear el usuario' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, user: authData.user });

@@ -34,9 +34,10 @@ export default async function HogarPage() {
   let householdGoals: any[] = [];
   let sharedTransactionIds: string[] = [];
   let profileMap = new Map<string, any>();
+  let monthlyReport: { name: string; value: number; color: string; percentage: string }[] = [];
 
   if (household) {
-    const [{ data: m }, { data: t }, { data: s }, { data: p }] = await Promise.all([
+    const [{ data: m }, { data: t }, { data: s }, { data: p }, { data: allCategories }, { data: monthlyTx }] = await Promise.all([
       adminClient
         .from('household_members')
         .select('*')
@@ -57,7 +58,16 @@ export default async function HogarPage() {
         .limit(10),
       adminClient
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name'),
+      supabase
+        .from('categories')
+        .select('id, name, color')
+        .order('name'),
+      adminClient
+        .from('transactions')
+        .select('category_id, amount, type')
+        .eq('household_id', household.id)
+        .gte('transaction_date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
     ]);
 
     const profilesData = p || [];
@@ -72,6 +82,27 @@ export default async function HogarPage() {
     }));
     transactions = t || [];
     settlements = s || [];
+
+    const categoryMap = new Map((allCategories || []).map((c: any) => [c.id, c]));
+    const expenseByCategory = new Map<string, number>();
+    (monthlyTx || []).forEach((t: any) => {
+      if (t.type !== 'expense') return;
+      if (!t.category_id || !categoryMap.has(t.category_id)) return;
+      const current = expenseByCategory.get(t.category_id) || 0;
+      expenseByCategory.set(t.category_id, current + t.amount);
+    });
+    const totalExpenses = Array.from(expenseByCategory.values()).reduce((s, v) => s + v, 0);
+    monthlyReport = Array.from(expenseByCategory.entries())
+      .map(([catId, value]) => {
+        const cat = categoryMap.get(catId);
+        return {
+          name: cat?.name || 'Sin categoría',
+          value,
+          color: cat?.color || '#94a3b8',
+          percentage: totalExpenses > 0 ? ((value / totalExpenses) * 100).toFixed(1) : '0',
+        };
+      })
+      .sort((a, b) => b.value - a.value);
 
     householdGoals = await savingsGoalsService.getForHousehold(supabase, household.id);
 
@@ -96,6 +127,7 @@ export default async function HogarPage() {
         profileMap={profileMap}
         initialHouseholdGoals={householdGoals}
         sharedTransactionIds={sharedTransactionIds}
+        initialMonthlyReport={monthlyReport}
       />
     </div>
   );
