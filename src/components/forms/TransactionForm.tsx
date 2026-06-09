@@ -1,19 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { transactionsService } from '@/services/transactionsService'
 import { accountsService } from '@/services/accountsService'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 import { CustomSelect } from '../ui/CustomSelect'
-import { Users, CreditCard, Check, RefreshCw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Users, CreditCard, Check, RefreshCw, Calendar } from 'lucide-react'
+import { cn, getBillingMonth } from '@/lib/utils'
 
 type Transaction = Database['public']['Tables']['transactions']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
 type HouseholdMember = Database['public']['Tables']['household_members']['Row']
 type HouseholdIncome = Database['public']['Tables']['household_incomes']['Row']
+
+interface CreditCardData {
+  closing_day: number
+  due_day: number | null
+  bank_name: string | null
+}
 
 interface Category {
   id: string
@@ -66,6 +72,19 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
   const [frequency, setFrequency] = useState<'monthly' | 'quarterly' | 'biannual' | 'annual'>(
     (initialTransaction?.subscription_frequency as any) || 'monthly'
   )
+  const [creditCardData, setCreditCardData] = useState<CreditCardData | null>(null)
+
+  const billingMonth = useMemo(() => {
+    if (paymentMethod !== 'card' || !creditCardData) return null
+    const [year, month, day] = transactionDate.split('-').map(Number)
+    return getBillingMonth(new Date(year, month - 1, day), creditCardData.closing_day)
+  }, [paymentMethod, creditCardData, transactionDate])
+
+  const billingMonthLabel = useMemo(() => {
+    if (!billingMonth) return null
+    const [year, month] = billingMonth.split('-').map(Number)
+    return new Date(year, month - 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+  }, [billingMonth])
 
   useEffect(() => {
     async function load() {
@@ -143,6 +162,13 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
     const selectedAccount = accounts.find(acc => acc.id === newAccountId)
     if (selectedAccount) {
       setCurrency(selectedAccount.currency as 'ARS' | 'USD')
+      if (selectedAccount.type === 'credit_card') {
+        accountsService.getCreditCard(supabase, newAccountId).then(card => {
+          if (card) setCreditCardData({ closing_day: card.closing_day, due_day: card.due_day, bank_name: card.bank_name })
+        })
+      } else {
+        setCreditCardData(null)
+      }
     }
   }
 
@@ -342,6 +368,13 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
           { value: 'transfer', label: 'Transferencia' }
         ]}
       />
+
+      {paymentMethod === 'card' && billingMonthLabel && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-700 dark:text-amber-400">
+          <Calendar className="w-4 h-4" />
+          <span>Mes de facturación: <strong className="capitalize">{billingMonthLabel}</strong></span>
+        </div>
+      )}
 
       {paymentMethod === 'card' && (
         <div className="space-y-2">

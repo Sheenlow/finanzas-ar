@@ -32,7 +32,10 @@ export function MonthlyFixedExpensesReport({ transactions, selectedMonth, exchan
 
   const fixedExpenses = useMemo(() => {
     return transactions.filter(t => {
-      const isCurrentMonth = t.transaction_date.startsWith(selectedMonth)
+      const effectiveMonth = t.payment_method === 'card' && t.billing_month
+        ? t.billing_month
+        : t.transaction_date.slice(0, 7)
+      const isCurrentMonth = effectiveMonth === selectedMonth
       const isFixed =
         t.type === 'subscription' || t.type === 'service' || t.is_installment === true ||
         (t as any).categories?.name === 'Servicios'

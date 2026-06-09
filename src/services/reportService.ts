@@ -21,7 +21,13 @@ export const reportService = {
     });
 
     fixedExpenses.forEach(t => {
-      const transDate = new Date(t.transaction_date);
+      const transDate = t.payment_method === 'card' && t.billing_month
+        ? (() => {
+            const [year, month] = t.billing_month.split('-').map(Number);
+            return new Date(year, month - 1, 1);
+          })()
+        : new Date(t.transaction_date);
+
       const endMonth = t.is_installment 
         ? Math.min(transDate.getMonth() + t.installments_total, 12)
         : 12;

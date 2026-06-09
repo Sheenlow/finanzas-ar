@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { householdSplitService } from './householdSplitService'
+import { getBillingMonth } from '@/lib/utils'
 
 interface Account {
   id: string
@@ -475,6 +476,20 @@ Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo a
 
     const freq = parsed.subscriptionFrequency || (parsed.type === 'subscription' ? 'monthly' : null)
 
+    let billingMonth: string | null = null
+    if (parsed.paymentMethod === 'card' && parsed.accountId) {
+      try {
+        const { data: card } = await this.supabase
+          .from('credit_cards')
+          .select('closing_day')
+          .eq('account_id', parsed.accountId)
+          .maybeSingle()
+        if (card) {
+          billingMonth = getBillingMonth(new Date(dateStr), card.closing_day)
+        }
+      } catch {}
+    }
+
     const { data, error } = await this.supabase.from('transactions').insert([{
       user_id: this.userId, account_id: parsed.accountId, category_id: categoryId,
       amount: installmentAmount, currency: parsed.currency, type: parsed.type,
@@ -482,6 +497,7 @@ Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo a
       is_installment: parsed.installments > 0, installments_total: parsed.installments || 1, installment_number: 1,
       subscription_frequency: freq as any,
       household_id: parsed.householdId || null,
+      billing_month: billingMonth,
     }]).select('id').single()
     if (error) { console.error('Error creating transaction:', error); throw new Error('Error al guardar el gasto') }
 

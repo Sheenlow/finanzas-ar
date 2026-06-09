@@ -101,41 +101,76 @@ export interface Database {
           created_at?: string
         }
       }
-      accounts: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          type: 'cash' | 'bank' | 'crypto'
-          currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
-          balance: number
-          color: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          type: 'cash' | 'bank' | 'crypto'
-          currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
-          balance?: number
-          color?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          type?: 'cash' | 'bank' | 'crypto'
-          currency?: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
-          balance?: number
-          color?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
+       accounts: {
+         Row: {
+           id: string
+           user_id: string
+           name: string
+           type: 'cash' | 'bank' | 'crypto' | 'credit_card'
+           currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
+           balance: number
+           color: string
+           created_at: string
+           updated_at: string
+         }
+         Insert: {
+           id?: string
+           user_id: string
+           name: string
+           type: 'cash' | 'bank' | 'crypto' | 'credit_card'
+           currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
+           balance?: number
+           color?: string
+           created_at?: string
+           updated_at?: string
+         }
+         Update: {
+           id?: string
+           user_id?: string
+           name?: string
+           type?: 'cash' | 'bank' | 'crypto' | 'credit_card'
+           currency?: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
+           balance?: number
+           color?: string
+           created_at?: string
+           updated_at?: string
+         }
+       }
+       credit_cards: {
+         Row: {
+           id: string
+           account_id: string
+           closing_day: number
+           due_day: number | null
+           credit_limit: number | null
+           bank_name: string | null
+           last_4_digits: string | null
+           created_at: string
+           updated_at: string
+         }
+         Insert: {
+           id?: string
+           account_id: string
+           closing_day: number
+           due_day?: number | null
+           credit_limit?: number | null
+           bank_name?: string | null
+           last_4_digits?: string | null
+           created_at?: string
+           updated_at?: string
+         }
+         Update: {
+           id?: string
+           account_id?: string
+           closing_day?: number
+           due_day?: number | null
+           credit_limit?: number | null
+           bank_name?: string | null
+           last_4_digits?: string | null
+           created_at?: string
+           updated_at?: string
+         }
+       }
       categories: {
         Row: {
           id: string
@@ -165,71 +200,74 @@ export interface Database {
           created_at?: string
         }
       }
-      transactions: {
-        Row: {
-          id: string
-          user_id: string
-          account_id: string
-          destination_account_id: string | null
-          category_id: string | null
-          amount: number
-          currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
-          type: 'income' | 'expense' | 'transfer' | 'subscription' | 'service'
-          description: string | null
-          transaction_date: string
-          exchange_rate: number
-          created_at: string
-          payment_method: 'cash' | 'card' | 'transfer'
-          is_installment: boolean
-          installments_total: number
-          installment_number: number
-          parent_transaction_id: string | null
-          subscription_frequency: 'monthly' | 'quarterly' | 'biannual' | 'annual' | null
-          household_id: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          account_id: string
-          destination_account_id?: string | null
-          category_id?: string | null
-          amount: number
-          currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
-          type: 'income' | 'expense' | 'transfer' | 'subscription' | 'service'
-          description?: string | null
-          transaction_date?: string
-          exchange_rate?: number
-          created_at?: string
-          payment_method?: 'cash' | 'card' | 'transfer'
-          is_installment?: boolean
-          installments_total?: number
-          installment_number?: number
-          parent_transaction_id?: string | null
-          subscription_frequency?: 'monthly' | 'quarterly' | 'biannual' | 'annual' | null
-          household_id?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          account_id?: string
-          destination_account_id?: string | null
-          category_id?: string | null
-          amount?: number
-          currency?: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
-          type?: 'income' | 'expense' | 'transfer' | 'subscription' | 'service'
-          description?: string | null
-          transaction_date?: string
-          exchange_rate?: number
-          created_at?: string
-          payment_method?: 'cash' | 'card' | 'transfer'
-          is_installment?: boolean
-          installments_total?: number
-          installment_number?: number
-          parent_transaction_id?: string | null
-          subscription_frequency?: 'monthly' | 'quarterly' | 'biannual' | 'annual' | null
-          household_id?: string | null
-        }
-      }
+       transactions: {
+         Row: {
+           id: string
+           user_id: string
+           account_id: string
+           destination_account_id: string | null
+           category_id: string | null
+           amount: number
+           currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
+           type: 'income' | 'expense' | 'transfer' | 'subscription' | 'service'
+           description: string | null
+           transaction_date: string
+           exchange_rate: number
+           created_at: string
+           payment_method: 'cash' | 'card' | 'transfer'
+           is_installment: boolean
+           installments_total: number
+           installment_number: number
+           parent_transaction_id: string | null
+           subscription_frequency: 'monthly' | 'quarterly' | 'biannual' | 'annual' | null
+           household_id: string | null
+           billing_month: string | null
+         }
+         Insert: {
+           id?: string
+           user_id: string
+           account_id: string
+           destination_account_id?: string | null
+           category_id?: string | null
+           amount: number
+           currency: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
+           type: 'income' | 'expense' | 'transfer' | 'subscription' | 'service'
+           description?: string | null
+           transaction_date?: string
+           exchange_rate?: number
+           created_at?: string
+           payment_method?: 'cash' | 'card' | 'transfer'
+           is_installment?: boolean
+           installments_total?: number
+           installment_number?: number
+           parent_transaction_id?: string | null
+           subscription_frequency?: 'monthly' | 'quarterly' | 'biannual' | 'annual' | null
+           household_id?: string | null
+           billing_month?: string | null
+         }
+         Update: {
+           id?: string
+           user_id?: string
+           account_id?: string
+           destination_account_id?: string | null
+           category_id?: string | null
+           amount?: number
+           currency?: 'ARS' | 'USD' | 'USDT' | 'USDC' | 'BTC' | 'ETH'
+           type?: 'income' | 'expense' | 'transfer' | 'subscription' | 'service'
+           description?: string | null
+           transaction_date?: string
+           exchange_rate?: number
+           created_at?: string
+           payment_method?: 'cash' | 'card' | 'transfer'
+           is_installment?: boolean
+           installments_total?: number
+           installment_number?: number
+           parent_transaction_id?: string | null
+           subscription_frequency?: 'monthly' | 'quarterly' | 'biannual' | 'annual' | null
+           household_id?: string | null
+           billing_month?: string | null
+         }
+       }
       savings_goals: {
         Row: {
           id: string

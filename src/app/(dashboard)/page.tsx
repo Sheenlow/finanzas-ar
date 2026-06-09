@@ -7,6 +7,7 @@ import { savingsGoalsService } from '@/services/savingsGoalsService';
 import { exchangeRateService } from '@/services/exchangeRateService';
 import { cryptoPriceService } from '@/services/cryptoPriceService';
 import { safeRedirect } from '@/lib/redirect';
+import { getEffectiveMonth } from '@/lib/utils';
 import { AnimatedCard } from '@/components/AnimatedCard';
 import { MonthSelector } from '@/components/MonthSelector';
 import { FixedExpensesReport } from '@/components/dashboard/FixedExpensesReport';
@@ -106,7 +107,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const todayStr = now.toISOString().slice(0, 10);
 
   const filteredTransactions = transactions.filter((t: any) => {
-    const isCurrentMonth = t.transaction_date.startsWith(selectedMonth);
+    const effectiveMonth = getEffectiveMonth(t);
+    const isCurrentMonth = effectiveMonth === selectedMonth;
     const isChild = t.parent_transaction_id && t.id !== t.parent_transaction_id;
     const isNotFuture = selectedMonth !== currentMonthKey || t.transaction_date.slice(0, 10) <= todayStr;
     return isCurrentMonth && !isChild && isNotFuture;
@@ -151,8 +153,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     const hhTransactions = await transactionsService.getHouseholdTransactions(supabase, membership.household_id);
     householdTransactions = hhTransactions.filter((t: any) => {
-      const isCurrentMonth = t.transaction_date.startsWith(selectedMonth);
-      return isCurrentMonth;
+      const effectiveMonth = getEffectiveMonth(t);
+      return effectiveMonth === selectedMonth;
     });
 
     const { data: sharedRecs } = await adminClient
@@ -173,7 +175,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     trendMap.set(key, { ingresos: 0, gastos: 0 })
   }
   transactions.forEach((t: any) => {
-    const key = t.transaction_date.slice(0, 7)
+    const key = getEffectiveMonth(t);
     const entry = trendMap.get(key)
     if (entry) {
       if (t.type === 'income') {
