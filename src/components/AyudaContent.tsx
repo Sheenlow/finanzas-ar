@@ -234,7 +234,6 @@ const sections: Section[] = [
 
 export function AyudaContent() {
   const [search, setSearch] = useState('')
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set())
 
   const filteredSections = search.trim()
     ? sections
@@ -280,18 +279,6 @@ export function AyudaContent() {
           <details
             key={section.id}
             className="group bg-card border border-border rounded-2xl overflow-hidden"
-            open={openSections.has(section.id)}
-            onToggle={e => {
-              if ((e.target as HTMLDetailsElement).open) {
-                setOpenSections(prev => new Set(prev).add(section.id))
-              } else {
-                setOpenSections(prev => {
-                  const next = new Set(prev)
-                  next.delete(section.id)
-                  return next
-                })
-              }
-            }}
           >
             <summary className="flex items-center gap-3 px-5 py-4 cursor-pointer list-none hover:bg-muted/30 transition-colors select-none">
               <section.icon className="w-5 h-5 text-primary shrink-0" />
