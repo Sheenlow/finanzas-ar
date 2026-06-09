@@ -334,6 +334,9 @@ Escribí: [descripción] [monto] [medio de pago]
 • Nafta 5000 crédito 3 cuotas
 • Zapatillas 25000 crédito
 
+<b>¿Cómo funcionan las tarjetas de crédito?</b>
+Cuando pagás con crédito, el bot asigna automáticamente el gasto al mes de facturación correcto usando la regla de cierre de tu tarjeta. Si tu tarjeta cierra el 18 y comprás el 20, el gasto va al mes siguiente (cuando llega el resumen). Podés configurar la regla de cierre (último jueves o día fijo) y cargar ciclos reales desde la app web en la sección Cuentas.
+
 <b>Comandos:</b>
 /stats — resumen de gastos del mes
 /list — últimos 10 gastos
@@ -350,7 +353,7 @@ Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo a
 
 <b>Consejos:</b>
 • Mencioná el medio de pago para agilizar (efectivo, débito, crédito).
-• Si pagás con tarjeta, el bot te pregunta si es en cuotas.
+• Si pagás con tarjeta de crédito, el bot calcula automáticamente el mes de facturación correcto.
 • Usá /config para enseñarle tus cuentas y preferencias.`
       case '/stats': return await this.getStatsMessage()
       case '/list': return await this.getListMessage()

@@ -45,7 +45,11 @@ const sections: Section[] = [
     items: [
       {
         question: 'Que tipos de cuenta existen?',
-        answer: 'Tres tipos: Banco (cuentas bancarias, billeteras virtuales como Mercado Pago), Efectivo (dinero en mano, "colchon") y Crypto (exchanges, wallets). Elegi el tipo que corresponda al crear la cuenta.',
+        answer: 'Cuatro tipos: Banco (cuentas bancarias, billeteras virtuales como Mercado Pago), Efectivo (dinero en mano, "colchon"), Crypto (exchanges, wallets) y Tarjeta de Credito (con gestion de cierres y ciclos de facturacion). Elegi el tipo que corresponda al crear la cuenta.',
+      },
+      {
+        question: 'Como funciona la Tarjeta de Credito?',
+        answer: 'Al crear una cuenta tipo "Tarjeta de Credito" podes configurar la regla de cierre: "Ultimo jueves" (autoestima el cierre segun la regla bancaria argentina, donde el cierre es el ultimo jueves de cada mes salvo que el mes termine lunes o martes, en cuyo caso pasa al primer jueves del mes siguiente) o "Dia fijo". Tambien podes cargar ciclos de facturacion reales cuando el banco te notifica la fecha exacta. El sistema prioriza: ciclo real > estimacion automatica > dia fijo.',
       },
       {
         question: 'Puedo editar o eliminar una cuenta?',
@@ -80,7 +84,11 @@ const sections: Section[] = [
       },
       {
         question: 'Que metodos de pago hay?',
-        answer: 'Efectivo (cash), Tarjeta (debito o credito) y Transferencia. Cada uno activa distintas opciones: tarjeta habilita cuotas, los otros no.',
+        answer: 'Efectivo (cash), Tarjeta (debito o credito) y Transferencia. Si elegis Tarjeta de Credito, el sistema asigna automaticamente el gasto al mes de facturacion correcto (cuando llega el resumen), no al mes calendario en que hiciste la compra.',
+      },
+      {
+        question: 'Como sabe el sistema a que mes pertenece una compra con tarjeta?',
+        answer: 'Cada compra con tarjeta de credito recibe un "mes de facturacion" automatico. Si tu tarjeta cierra el 18 y compras el 20 de mayo, el gasto aparece en el dashboard de junio (cuando llega el resumen y lo pagas). La estimacion usa la regla configurada en la cuenta (ultimo jueves o dia fijo). Si el banco te avisa un cierre distinto al estimado, podes registrarlo manualmente en la seccion Cuentas y el sistema corrige el mes automaticamente.',
       },
     ],
   },
@@ -184,7 +192,7 @@ const sections: Section[] = [
       },
       {
         question: 'Que comandos tiene el bot?',
-        answer: '/stats — Resumen de gastos del mes actual. /list — Ultimos 10 gastos registrados. /balance — Saldo actual de todas tus cuentas. /ayuda — Guia completa de uso (lo que estas viendo ahora, resumido). /config — Personalizar el prompt de IA. /desvincular — Desvincular tu cuenta de Telegram.',
+        answer: '/stats — Resumen de gastos del mes actual. /list — Ultimos 10 gastos registrados. /balance — Saldo actual de todas tus cuentas. /ayuda — Guia completa de uso (lo que estas viendo ahora, resumido). /config — Personalizar el prompt de IA. /desvincular — Desvincular tu cuenta de Telegram. Al pagar con tarjeta de credito, el bot calcula automaticamente el mes de facturacion correcto usando la regla de cierre de tu cuenta.',
       },
       {
         question: 'Como aprende el bot?',
