@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import nodemailer from 'nodemailer'
 
 const WELCOME_HTML = (name: string) => `<!DOCTYPE html>
 <html>
@@ -38,19 +39,20 @@ const WELCOME_HTML = (name: string) => `<!DOCTYPE html>
 </html>`
 
 export async function GET() {
-  const apiKey = process.env.RESEND_API_KEY
+  const smtpConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS)
   return NextResponse.json({
     status: 'ok',
-    resend_configured: !!apiKey,
+    smtp_configured: smtpConfigured,
     supabase_configured: !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
   })
 }
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
-    console.error('[welcome-email] RESEND_API_KEY not set in environment')
-    return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 })
+  const smtpUser = process.env.SMTP_USER
+  const smtpPass = process.env.SMTP_PASS
+  if (!smtpUser || !smtpPass) {
+    console.error('[welcome-email] SMTP_USER or SMTP_PASS not set')
+    return NextResponse.json({ error: 'SMTP not configured' }, { status: 500 })
   }
 
   let body: any
@@ -90,39 +92,28 @@ export async function POST(request: NextRequest) {
 
   const fullName = body.record.full_name || email.split('@')[0]
 
-  const from = process.env.RESEND_FROM_EMAIL || 'Finanzas AR <delivered@resend.dev>'
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: { user: smtpUser, pass: smtpPass },
+  })
 
-  let res: Response
+  const from = process.env.SMTP_FROM || `Finanzas AR <${smtpUser}>`
+
   try {
-    res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from,
-        to: email,
-        subject: 'Bienvenido a Finanzas AR',
-        html: WELCOME_HTML(fullName),
-      }),
+    const info = await transporter.sendMail({
+      from,
+      to: email,
+      subject: 'Bienvenido a Finanzas AR',
+      html: WELCOME_HTML(fullName),
     })
+    return NextResponse.json({ ok: true, id: info.messageId })
   } catch (err: any) {
-    console.error('[welcome-email] Resend fetch failed:', err)
-    return NextResponse.json({ error: 'Failed to reach Resend API', detail: err.message }, { status: 502 })
-  }
-
-  if (!res.ok) {
-    let errBody: any = {}
-    try { errBody = await res.json() } catch {}
-    console.error('[welcome-email] Resend API error:', res.status, errBody)
+    console.error('[welcome-email] SMTP send error:', err)
     return NextResponse.json({
-      error: 'Resend API rejected the email',
-      status: res.status,
-      detail: errBody,
+      error: 'Failed to send email',
+      detail: err.message || String(err),
     }, { status: 502 })
   }
-
-  const data = await res.json()
-  return NextResponse.json({ ok: true, id: data?.id })
 }
