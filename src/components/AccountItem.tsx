@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 import { AccountForm } from './forms/AccountForm'
 import { Wallet, CreditCard } from 'lucide-react'
+import { estimateNextClosing } from '@/lib/utils'
 
 const TYPE_LABEL: Record<string, string> = {
   bank: 'Banco',
@@ -68,7 +69,10 @@ export function AccountItem({ account, userId }: { account: Account, userId: str
           </p>
           {cardData && (
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              Cierra el {cardData.closing_day}
+              {cardData.closing_rule === 'last_thursday'
+                ? <>Próx. cierre: {estimateNextClosing(cardData.closing_rule, cardData.closing_day)}</>
+                : <>Cierra el {cardData.closing_day}</>
+              }
               {cardData.due_day && ` · Vence el ${cardData.due_day}`}
               {cardData.credit_limit != null && ` · Límite ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: account.currency }).format(cardData.credit_limit)}`}
             </p>

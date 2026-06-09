@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database.types';
 import { accountsService } from './accountsService';
-import { getBillingMonth } from '@/lib/utils';
+import { getBillingMonthFromRules, getBillingMonthFromCycle } from '@/lib/utils';
 
 function addMonths(date: Date, months: number): Date {
   const result = new Date(date);
@@ -22,9 +22,18 @@ async function resolveBillingMonth(
   if (paymentMethod !== 'card' || !accountId) return null;
   try {
     const card = await accountsService.getCreditCard(supabase, accountId);
-    if (card) {
-      return getBillingMonth(transactionDate, card.closing_day);
+    if (!card) return null;
+
+    const cycle = await accountsService.findClosestBillingCycle(
+      supabase,
+      card.id,
+      typeof transactionDate === 'string' ? transactionDate : transactionDate.toISOString()
+    );
+    if (cycle) {
+      return getBillingMonthFromCycle(transactionDate, cycle.close_date);
     }
+
+    return getBillingMonthFromRules(transactionDate, card.closing_rule, card.closing_day);
   } catch {}
   return null;
 }

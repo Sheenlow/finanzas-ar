@@ -1,7 +1,7 @@
 import OpenAI from 'openai'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { householdSplitService } from './householdSplitService'
-import { getBillingMonth } from '@/lib/utils'
+import { getBillingMonthFromRules, getBillingMonthFromCycle } from '@/lib/utils'
 
 interface Account {
   id: string
@@ -481,11 +481,23 @@ Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo a
       try {
         const { data: card } = await this.supabase
           .from('credit_cards')
-          .select('closing_day')
+          .select('id, closing_day, closing_rule')
           .eq('account_id', parsed.accountId)
           .maybeSingle()
         if (card) {
-          billingMonth = getBillingMonth(new Date(dateStr), card.closing_day)
+          const { data: cycle } = await this.supabase
+            .from('billing_cycles')
+            .select('*')
+            .eq('credit_card_id', card.id)
+            .gte('close_date', dateStr.slice(0, 10))
+            .order('close_date', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+          if (cycle) {
+            billingMonth = getBillingMonthFromCycle(new Date(dateStr), cycle.close_date)
+          } else {
+            billingMonth = getBillingMonthFromRules(new Date(dateStr), card.closing_rule, card.closing_day)
+          }
         }
       } catch {}
     }

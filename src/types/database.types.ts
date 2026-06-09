@@ -136,42 +136,68 @@ export interface Database {
            updated_at?: string
          }
        }
-       credit_cards: {
-         Row: {
-           id: string
-           account_id: string
-           closing_day: number
-           due_day: number | null
-           credit_limit: number | null
-           bank_name: string | null
-           last_4_digits: string | null
-           created_at: string
-           updated_at: string
-         }
-         Insert: {
-           id?: string
-           account_id: string
-           closing_day: number
-           due_day?: number | null
-           credit_limit?: number | null
-           bank_name?: string | null
-           last_4_digits?: string | null
-           created_at?: string
-           updated_at?: string
-         }
-         Update: {
-           id?: string
-           account_id?: string
-           closing_day?: number
-           due_day?: number | null
-           credit_limit?: number | null
-           bank_name?: string | null
-           last_4_digits?: string | null
-           created_at?: string
-           updated_at?: string
-         }
-       }
-      categories: {
+        credit_cards: {
+          Row: {
+            id: string
+            account_id: string
+            closing_day: number
+            closing_rule: 'fixed' | 'last_thursday'
+            due_day: number | null
+            credit_limit: number | null
+            bank_name: string | null
+            last_4_digits: string | null
+            created_at: string
+            updated_at: string
+          }
+          Insert: {
+            id?: string
+            account_id: string
+            closing_day?: number
+            closing_rule?: 'fixed' | 'last_thursday'
+            due_day?: number | null
+            credit_limit?: number | null
+            bank_name?: string | null
+            last_4_digits?: string | null
+            created_at?: string
+            updated_at?: string
+          }
+          Update: {
+            id?: string
+            account_id?: string
+            closing_day?: number
+            closing_rule?: 'fixed' | 'last_thursday'
+            due_day?: number | null
+            credit_limit?: number | null
+            bank_name?: string | null
+            last_4_digits?: string | null
+            created_at?: string
+            updated_at?: string
+          }
+        }
+        billing_cycles: {
+          Row: {
+            id: string
+            credit_card_id: string
+            close_date: string
+            due_date: string | null
+            created_at: string
+          }
+          Insert: {
+            id?: string
+            credit_card_id: string
+            close_date: string
+            due_date?: string | null
+            created_at?: string
+          }
+          Update: {
+            id?: string
+            credit_card_id?: string
+            close_date?: string
+            due_date?: string | null
+            created_at?: string
+          }
+        }
+       categories: {
         Row: {
           id: string
           user_id: string | null

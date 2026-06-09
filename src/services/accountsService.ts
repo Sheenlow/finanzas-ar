@@ -6,6 +6,8 @@ type AccountInsert = Database['public']['Tables']['accounts']['Insert'];
 type AccountUpdate = Database['public']['Tables']['accounts']['Update'];
 type CreditCard = Database['public']['Tables']['credit_cards']['Row'];
 type CreditCardInsert = Database['public']['Tables']['credit_cards']['Insert'];
+type BillingCycle = Database['public']['Tables']['billing_cycles']['Row'];
+type BillingCycleInsert = Database['public']['Tables']['billing_cycles']['Insert'];
 
 export const accountsService = {
   async getAll(supabase: any, userId: string) {
@@ -90,5 +92,50 @@ export const accountsService = {
       .eq('account_id', accountId);
     
     if (error) throw error;
+  },
+
+  async getBillingCycles(supabase: any, creditCardId: string) {
+    const { data, error } = await supabase
+      .from('billing_cycles')
+      .select('*')
+      .eq('credit_card_id', creditCardId)
+      .order('close_date', { ascending: false });
+    
+    if (error) throw error;
+    return data as BillingCycle[];
+  },
+
+  async addBillingCycle(supabase: any, cycle: BillingCycleInsert) {
+    const { data, error } = await supabase
+      .from('billing_cycles')
+      .insert([cycle])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as BillingCycle;
+  },
+
+  async deleteBillingCycle(supabase: any, cycleId: string) {
+    const { error } = await supabase
+      .from('billing_cycles')
+      .delete()
+      .eq('id', cycleId);
+    
+    if (error) throw error;
+  },
+
+  async findClosestBillingCycle(supabase: any, creditCardId: string, transactionDate: string) {
+    const txDate = transactionDate.slice(0, 10);
+    const { data, error } = await supabase
+      .from('billing_cycles')
+      .select('*')
+      .eq('credit_card_id', creditCardId)
+      .gte('close_date', txDate)
+      .order('close_date', { ascending: true })
+      .limit(1);
+    
+    if (error) throw error;
+    return (data?.[0] as BillingCycle) || null;
   },
 };

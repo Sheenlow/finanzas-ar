@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 import { CustomSelect } from '../ui/CustomSelect'
 import { Users, CreditCard, Check, RefreshCw, Calendar } from 'lucide-react'
-import { cn, getBillingMonth } from '@/lib/utils'
+import { cn, getBillingMonthFromRules } from '@/lib/utils'
 
 type Transaction = Database['public']['Tables']['transactions']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -17,6 +17,7 @@ type HouseholdIncome = Database['public']['Tables']['household_incomes']['Row']
 
 interface CreditCardData {
   closing_day: number
+  closing_rule: 'fixed' | 'last_thursday'
   due_day: number | null
   bank_name: string | null
 }
@@ -77,7 +78,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
   const billingMonth = useMemo(() => {
     if (paymentMethod !== 'card' || !creditCardData) return null
     const [year, month, day] = transactionDate.split('-').map(Number)
-    return getBillingMonth(new Date(year, month - 1, day), creditCardData.closing_day)
+    return getBillingMonthFromRules(new Date(year, month - 1, day), creditCardData.closing_rule, creditCardData.closing_day)
   }, [paymentMethod, creditCardData, transactionDate])
 
   const billingMonthLabel = useMemo(() => {
@@ -164,7 +165,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
       setCurrency(selectedAccount.currency as 'ARS' | 'USD')
       if (selectedAccount.type === 'credit_card') {
         accountsService.getCreditCard(supabase, newAccountId).then(card => {
-          if (card) setCreditCardData({ closing_day: card.closing_day, due_day: card.due_day, bank_name: card.bank_name })
+          if (card) setCreditCardData({ closing_day: card.closing_day, closing_rule: card.closing_rule, due_day: card.due_day, bank_name: card.bank_name })
         })
       } else {
         setCreditCardData(null)
