@@ -333,9 +333,6 @@ Escribí: [descripción] [monto] [medio de pago]
 • Nafta 5000 crédito 3 cuotas
 • Zapatillas 25000 crédito
 
-<b>Registrar un gasto por voz:</b>
-Mandá un audio describiendo el gasto. El bot lo transcribe y procesa automáticamente.
-
 <b>Comandos:</b>
 /stats — resumen de gastos del mes
 /list — últimos 10 gastos
@@ -353,8 +350,7 @@ Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo a
 <b>Consejos:</b>
 • Mencioná el medio de pago para agilizar (efectivo, débito, crédito).
 • Si pagás con tarjeta, el bot te pregunta si es en cuotas.
-• Usá /config para enseñarle tus cuentas y preferencias.
-• Los audios funcionan mejor si hablás claro y mencionás el monto.`
+• Usá /config para enseñarle tus cuentas y preferencias.`
       case '/stats': return await this.getStatsMessage()
       case '/list': return await this.getListMessage()
       case '/balance': return await this.getBalancesMessage()
@@ -908,50 +904,4 @@ Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo a
     return this.renderState(firstState, parsed)
   }
 
-  // ──── Voice handler ─────────────────────────────────
-
-  async processVoice(fileId: string, telegramToken: string): Promise<{ text: string; keyboard?: { text: string; callback_data: string }[][] }> {
-    const { TelegramClient } = await import('./telegramClient')
-    const telegram = new TelegramClient(telegramToken)
-
-    let filePath: string
-    try {
-      const info = await telegram.getFile(fileId)
-      filePath = info.file_path
-    } catch (e: any) {
-      console.error('Telegram getFile error:', e)
-      return { text: '❌ No pude obtener el audio de Telegram. Intentá de nuevo.' }
-    }
-
-    let audioBuffer: Buffer
-    try {
-      audioBuffer = await telegram.downloadFile(filePath)
-    } catch (e: any) {
-      console.error('Telegram download error:', e)
-      return { text: '❌ No pude descargar el audio. Intentá de nuevo.' }
-    }
-
-    const { writeFileSync, readFileSync, unlinkSync } = await import('fs')
-    const { join } = await import('path')
-    const tmpPath = join('/tmp', `voice-${Date.now()}.ogg`)
-    writeFileSync(tmpPath, audioBuffer)
-
-    try {
-      const { toFile } = await import('openai/uploads')
-      const file = await toFile(readFileSync(tmpPath), 'voice.ogg', { type: 'audio/ogg' })
-      const transcription = await this.openai.audio.transcriptions.create({
-        model: 'whisper-1',
-        file,
-        language: 'es',
-        response_format: 'text',
-      })
-      return this.processText(transcription)
-    } catch (e: any) {
-      console.error('Whisper API error:', e.message, e.status, e.code, e.type)
-      const detail = e?.error?.message || e.message || String(e)
-      return { text: `❌ Error de transcripción: ${detail.slice(0, 200)}` }
-    } finally {
-      try { unlinkSync(tmpPath) } catch {}
-    }
-  }
 }

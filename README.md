@@ -1,6 +1,6 @@
 # Finanzas AR
 
-Aplicacion de gestion financiera personal diseñada para el contexto argentino. Permite llevar el control de cuentas en multiples monedas (ARS, USD, crypto), registrar gastos e ingresos, gestionar suscripciones y cuotas, establecer metas de ahorro, compartir gastos del hogar con division automatica proporcional a los ingresos, y registrar todo por texto o voz desde un bot de Telegram con IA.
+Aplicacion de gestion financiera personal diseñada para el contexto argentino. Permite llevar el control de cuentas en multiples monedas (ARS, USD, crypto), registrar gastos e ingresos, gestionar suscripciones y cuotas, establecer metas de ahorro, compartir gastos del hogar con division automatica proporcional a los ingresos, y registrar todo por texto desde un bot de Telegram con IA.
 
 ## Stack
 
@@ -46,7 +46,6 @@ Aplicacion de gestion financiera personal diseñada para el contexto argentino. 
 - Vinculacion via codigo unico de un solo uso desde el dashboard (`/vincular`)
 - Desvinculacion con regeneracion de token (`/desvincular`)
 - **Registro de gastos por texto**: parser NLP que extrae descripcion, monto, moneda, cuenta, metodo de pago y categoria
-- **Registro de gastos por voz**: descarga audio de Telegram, transcribe con Whisper de OpenAI, procesa igual que texto
 - Si el parser no resuelve el gasto, consulta a GPT-4o-mini con contexto de cuentas, categorias y reglas aprendidas
 - **Flujo interactivo** con inline keyboards para confirmar cada detalle: cuotas, cuenta, categoria, recurrencia, visibilidad en hogar, compartir gasto
 - **Aprendizaje automatico**: cuando el usuario corrige categoria o cuenta, el bot guarda reglas de keyword para futuros gastos
@@ -120,7 +119,7 @@ pagina-responsive/
 │   │   │   └── hogar/page.tsx            # Gestion completa del hogar (force-dynamic)
 │   │   ├── api/                          # API Routes (20+ endpoints)
 │   │   │   ├── auth/register/route.ts    # Registro con reCAPTCHA + zxcvbn
-│   │   │   ├── bot/telegram/route.ts     # Webhook del bot (mensajes, callbacks, voz)
+│   │   │   ├── bot/telegram/route.ts     # Webhook del bot (mensajes, callbacks)
 │   │   │   ├── cron/
 │   │   │   │   ├── generate-subscriptions/route.ts  # Cron: suscripciones mensuales
 │   │   │   │   └── keepalive/route.ts               # Cron: ping semanal
@@ -359,7 +358,7 @@ supabase db push
 
 | Endpoint                     | Metodo | Descripcion                          | Auth              |
 |------------------------------|--------|--------------------------------------|-------------------|
-| `/api/bot/telegram`          | POST   | Webhook: mensajes, callbacks, voz    | WEBHOOK_SECRET    |
+| `/api/bot/telegram`          | POST   | Webhook: mensajes y callbacks       | WEBHOOK_SECRET    |
 
 ### Cron Jobs
 
@@ -403,7 +402,7 @@ supabase db push
 
 1. El usuario envia `/vincular <codigo>` al bot con el codigo del dashboard
 2. El bot valida el token (un solo uso), asocia `telegram_user_id` ↔ `supabase_user_id` en `bot_users`
-3. Para registrar un gasto, el usuario envia texto o audio:
+3. Para registrar un gasto, el usuario envia texto:
    - **Parser NLP**: extrae descripcion, monto, moneda (ARS/USD/BTC/ETH), cuenta, metodo de pago
    - Si el parser falla, consulta a **GPT-4o-mini** con el contexto del usuario
 4. Flujo interactivo con **inline keyboards**:

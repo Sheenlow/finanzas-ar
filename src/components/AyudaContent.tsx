@@ -175,15 +175,11 @@ const sections: Section[] = [
       },
       {
         question: 'Que puedo hacer con el bot?',
-        answer: 'Registrar gastos por texto o por audio, consultar saldos y estadisticas, y personalizar como la IA interpreta tus mensajes.',
+        answer: 'Registrar gastos por texto, consultar saldos y estadisticas, y personalizar como la IA interpreta tus mensajes.',
       },
       {
         question: 'Como registro un gasto por texto?',
         answer: 'Escribi en el chat del bot describiendo el gasto. Ejemplos: "Supermercado 8000 efectivo", "Netflix 12 USD debito", "Nafta 5000 credito 3 cuotas", "Zapatillas 25000 credito". El bot te va a guiar paso a paso para confirmar cada detalle.',
-      },
-      {
-        question: 'Como registro un gasto por audio?',
-        answer: 'Envia una nota de voz al bot describiendo el gasto (ej: "Gaste 5000 pesos en la verduleria con efectivo"). El bot transcribe el audio con inteligencia artificial y lo procesa igual que un mensaje de texto.',
       },
       {
         question: 'Que comandos tiene el bot?',

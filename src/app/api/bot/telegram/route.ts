@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
   const telegramUserId = (callbackQuery?.from?.id || message?.from?.id) as number | undefined
   const chatId = callbackQuery?.message?.chat?.id || message?.chat?.id
   const text = message?.text
-  const voice = message?.voice
 
   if (!chatId || !telegramUserId) return NextResponse.json({ ok: true })
 
@@ -91,11 +90,8 @@ export async function POST(req: NextRequest) {
       } else {
         result = await processor.processText(text)
       }
-    } else if (voice) {
-      await telegram.sendMessage(chatId, '🎤 Procesando tu audio...')
-      result = await processor.processVoice(voice.file_id, TELEGRAM_TOKEN)
     } else {
-      result = { text: 'Solo acepto mensajes de texto o notas de voz.' }
+      result = { text: 'Solo acepto mensajes de texto.' }
     }
 
     if (result.keyboard && result.keyboard.length > 0) {
