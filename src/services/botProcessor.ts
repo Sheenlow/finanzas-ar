@@ -354,7 +354,11 @@ Andá al Dashboard de la app web, copiá el código de vinculación, y mandalo a
 <b>Consejos:</b>
 • Mencioná el medio de pago para agilizar (efectivo, débito, crédito).
 • Si pagás con tarjeta de crédito, el bot calcula automáticamente el mes de facturación correcto.
-• Usá /config para enseñarle tus cuentas y preferencias.`
+• Usá /config para enseñarle tus cuentas y preferencias.
+
+<b>Compartí el bot:</b>
+Link: https://t.me/FinanzasArBot
+Usuario: @FinanzasArBot`
       case '/stats': return await this.getStatsMessage()
       case '/list': return await this.getListMessage()
       case '/balance': return await this.getBalancesMessage()

@@ -24,6 +24,7 @@ const WELCOME_HTML = (name: string) => `<!DOCTYPE html>
     </div>
     <p style="color: #475569; font-size: 15px; line-height: 1.6;">
       Tambien podes vincular el <strong>Bot de Telegram</strong> para registrar gastos por texto desde el chat.
+      Accede desde <a href="https://t.me/FinanzasArBot" style="color: #0ea5e9;">t.me/FinanzasArBot</a> o buscalo como <strong>@FinanzasArBot</strong> en Telegram.
     </p>
     <div style="text-align: center; margin-top: 32px;">
       <a href="https://finanzas-ar-app.vercel.app"

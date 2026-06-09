@@ -222,34 +222,45 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </header>
 
         {botLink ? (
-          <section className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5 mb-6">
-            <div className="flex items-center gap-3">
+          <section className="bg-card border border-border border-l-4 border-l-emerald-500 rounded-2xl p-5 mb-6 shadow-sm">
+            <div className="flex items-start gap-3">
               <span className="text-2xl">🤖</span>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-semibold text-foreground">Bot de Telegram vinculado</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Telegram ID: {botLink.telegram_user_id}</p>
+                <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
+                  @FinanzasArBot · t.me/FinanzasArBot
+                </a>
               </div>
             </div>
           </section>
         ) : botConfig?.link_token ? (
-          <section className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-5 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <section className="bg-card border border-border border-l-4 border-l-indigo-500 rounded-2xl p-5 mb-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
               <span className="text-2xl">🤖</span>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-foreground">Vinculá tu bot de Telegram</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Enviá este código al bot para vincular tu cuenta</p>
                 <code className="mt-1.5 inline-block text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-mono select-all">{botConfig.link_token}</code>
+                <div className="mt-2">
+                  <span className="text-xs text-muted-foreground">/vincular {botConfig.link_token.toString().slice(0, 8)}...</span>
+                </div>
+                <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
+                  @FinanzasArBot · t.me/FinanzasArBot
+                </a>
               </div>
-              <span className="text-xs text-muted-foreground whitespace-nowrap">/vincular {botConfig.link_token.toString().slice(0, 8)}...</span>
             </div>
           </section>
         ) : (
-          <section className="bg-muted/30 border border-border rounded-2xl p-5 mb-6">
-            <div className="flex items-center gap-3">
+          <section className="bg-card border border-border border-l-4 border-l-amber-500 rounded-2xl p-5 mb-6 shadow-sm">
+            <div className="flex items-start gap-3">
               <span className="text-2xl">🤖</span>
               <div>
-                <p className="text-sm text-muted-foreground">Bot de Telegram no configurado</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Usá el comando /config en el bot de Telegram para activarlo.</p>
+                <p className="text-sm font-semibold text-foreground">Bot de Telegram</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Usá el comando /config para empezar.</p>
+                <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
+                  @FinanzasArBot · t.me/FinanzasArBot
+                </a>
               </div>
             </div>
           </section>

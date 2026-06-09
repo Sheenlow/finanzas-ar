@@ -180,7 +180,11 @@ const sections: Section[] = [
     items: [
       {
         question: 'Como vinculo el bot de Telegram?',
-        answer: 'En el Dashboard, busca la seccion "Vincula tu bot de Telegram" (color indigo). Copia el codigo que aparece (formato UUID). En Telegram, busca al bot y envia el comando: /vincular seguido del codigo (ej: /vincular a1b2c3d4-e5f6-7890-abcd-ef1234567890).',
+        answer: 'En el Dashboard, busca la seccion "Vincula tu bot de Telegram" (color indigo). Copia el codigo que aparece (formato UUID). Envia el comando /vincular seguido del codigo al bot (ej: /vincular a1b2c3d4-e5f6-7890-abcd-ef1234567890). Podes encontrar al bot en https://t.me/FinanzasArBot o buscandolo como @FinanzasArBot en Telegram.',
+      },
+      {
+        question: 'Donde encuentro el bot?',
+        answer: 'Podes acceder directamente desde https://t.me/FinanzasArBot o buscarlo manualmente en Telegram como @FinanzasArBot.',
       },
       {
         question: 'Que puedo hacer con el bot?',
