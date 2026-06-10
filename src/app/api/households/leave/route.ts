@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { requireOrigin } from '@/lib/security';
 
-export async function POST() {
+export async function POST(req: Request) {
+  if (!requireOrigin(req)) {
+    return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
   try {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -53,6 +58,6 @@ export async function POST() {
     return NextResponse.json({ success: true, householdDeleted: false });
   } catch (error: any) {
     console.error('Error leaving household:', error);
-    return NextResponse.json({ error: error.message || 'Error al salir del hogar' }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

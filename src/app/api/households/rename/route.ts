@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { requireOrigin } from '@/lib/security';
 
 export async function PATCH(req: Request) {
+  if (!requireOrigin(req)) {
+    return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
   try {
     const { householdId, name } = await req.json();
 
@@ -42,6 +47,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Error al renombrar' }, { status: 500 });
+    console.error('Error renaming household:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

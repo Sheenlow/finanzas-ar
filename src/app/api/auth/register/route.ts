@@ -1,18 +1,32 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import zxcvbn from 'zxcvbn';
+import { checkRateLimit, getClientIp, requireOrigin } from '@/lib/security';
 
 export async function POST(req: Request) {
+  // CSRF / Origin validation
+  if (!requireOrigin(req)) {
+    return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
+  // Rate limiting: 5 registros por minuto por IP
+  const ip = getClientIp(req);
+  const rate = checkRateLimit(`register:${ip}`, 5, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json({ error: 'Demasiados intentos. Intenta de nuevo en un minuto.' }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const { email, password, firstName, lastName, captchaToken } = body;
 
     // 1. Validar reCAPTCHA
-    if (captchaToken !== 'dev-token') {
+    const isDev = process.env.NODE_ENV === 'development' && captchaToken === 'dev-token'
+    if (!isDev) {
         const secret = process.env.RECAPTCHA_SECRET_KEY;
         if (!secret) {
             console.error('RECAPTCHA_SECRET_KEY no configurada');
-            return NextResponse.json({ error: 'Error de servidor: clave no configurada' }, { status: 500 });
+            return NextResponse.json({ error: 'Error de servidor' }, { status: 500 });
         }
 
         const captchaResponse = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${captchaToken}`, {
@@ -37,7 +51,7 @@ export async function POST(req: Request) {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !anonKey) {
         console.error('Supabase Keys no configuradas');
-        return NextResponse.json({ error: 'Error de servidor: configuracion incompleta' }, { status: 500 });
+        return NextResponse.json({ error: 'Error de servidor' }, { status: 500 });
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || 'http://localhost:3000';
@@ -54,7 +68,7 @@ export async function POST(req: Request) {
 
     if (authError) {
         console.error('Error creando usuario en Supabase:', authError);
-        return NextResponse.json({ error: authError.message }, { status: 400 });
+        return NextResponse.json({ error: 'No se pudo crear el usuario. Verifica los datos e intenta de nuevo.' }, { status: 400 });
     }
 
     if (!authData.user) {

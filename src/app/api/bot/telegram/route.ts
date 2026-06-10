@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { TelegramClient } from '@/services/telegramClient'
 import { BotProcessor } from '@/services/botProcessor'
+import { checkRateLimit, getClientIp } from '@/lib/security'
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET!
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token')
   if (secret !== WEBHOOK_SECRET) {
     return new NextResponse('Unauthorized', { status: 401 })
+  }
+
+  // Rate limiting: 60 requests per minute per IP
+  const ip = getClientIp(req)
+  const rate = checkRateLimit(`telegram:${ip}`, 60, 60_000)
+  if (!rate.allowed) {
+    return new NextResponse('Too Many Requests', { status: 429 })
   }
 
   const body = await req.json()

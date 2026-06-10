@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { requireOrigin } from '@/lib/security';
 import crypto from 'crypto';
 
 export async function POST(req: Request) {
+  if (!requireOrigin(req)) {
+    return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
   try {
     const { householdId, email } = await req.json();
     if (!householdId || !email?.trim()) {
@@ -42,6 +47,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ inviteLink, token });
   } catch (error: any) {
     console.error('Error creating invitation:', error);
-    return NextResponse.json({ error: error.message || 'Error al crear invitación' }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

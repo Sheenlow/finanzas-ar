@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { householdSplitService } from '@/services/householdSplitService';
+import { requireOrigin } from '@/lib/security';
 
 export async function POST(req: Request) {
+  if (!requireOrigin(req)) {
+    return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
   try {
     const { household_id, transaction_id, amount, currency } = await req.json();
 
@@ -52,6 +57,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, ...result });
   } catch (error: any) {
     console.error('Error splitting household expense:', error);
-    return NextResponse.json({ error: error.message || 'Error al dividir gasto' }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

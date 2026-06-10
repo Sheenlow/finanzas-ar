@@ -62,6 +62,7 @@ export async function GET() {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Error al exportar' }, { status: 500 });
+    console.error('Error exporting household:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

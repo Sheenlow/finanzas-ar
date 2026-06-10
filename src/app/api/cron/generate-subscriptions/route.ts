@@ -21,7 +21,10 @@ export async function GET(req: Request) {
     .eq('type', 'subscription')
     .is('parent_transaction_id', null);
 
-  if (error) return NextResponse.json({ error }, { status: 500 });
+  if (error) {
+    console.error('Error fetching subscriptions:', error)
+    return NextResponse.json({ error: 'Error al procesar suscripciones' }, { status: 500 })
+  }
 
   const today = new Date();
   const currentMonth = today.getMonth() + 1;

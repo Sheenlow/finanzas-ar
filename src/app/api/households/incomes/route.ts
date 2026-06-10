@@ -2,9 +2,14 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { householdSplitService } from '@/services/householdSplitService';
+import { requireOrigin } from '@/lib/security';
 import type { Database } from '@/types/database.types';
 
 export async function POST(req: Request) {
+  if (!requireOrigin(req)) {
+    return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
   try {
     const { household_id, monthly_income_ars } = await req.json();
 
@@ -37,7 +42,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ income });
   } catch (error: any) {
     console.error('Error updating household income:', error);
-    return NextResponse.json({ error: error.message || 'Error al actualizar ingreso' }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
 
@@ -74,6 +79,6 @@ export async function GET() {
     return NextResponse.json({ incomes, members, autoSplit });
   } catch (error: any) {
     console.error('Error fetching household incomes:', error);
-    return NextResponse.json({ error: error.message || 'Error al obtener ingresos' }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
