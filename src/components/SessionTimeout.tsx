@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { authService } from '@/services/authService'
+import { authService } from '@/services/authService.client'
 import { useRouter } from 'next/navigation'
 import { LogOut, Clock } from 'lucide-react'
 

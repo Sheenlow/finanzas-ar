@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { TelegramClient } from '@/services/telegramClient'
-import { BotProcessor } from '@/services/botProcessor'
+import { BotProcessor } from '@/services/bot'
 import { getClientIp } from '@/lib/security'
 import { telegramLimiter } from '@/lib/rateLimit'
 
@@ -9,9 +9,9 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET!
 
 async function resolveUserId(telegramUserId: number): Promise<string | null> {
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const admin = createAdminClient()
   const { data } = await admin.from('bot_users').select('supabase_user_id').eq('telegram_user_id', telegramUserId).maybeSingle()
-  return data?.supabase_user_id || null
+  return (data as unknown as { supabase_user_id: string } | null)?.supabase_user_id || null
 }
 
 export async function POST(req: NextRequest) {

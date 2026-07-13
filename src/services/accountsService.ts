@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from '@/types/supabase';
 import { Database } from '@/types/database.types';
 
 type Account = Database['public']['Tables']['accounts']['Row'];
@@ -10,7 +10,7 @@ type BillingCycle = Database['public']['Tables']['billing_cycles']['Row'];
 type BillingCycleInsert = Database['public']['Tables']['billing_cycles']['Insert'];
 
 export const accountsService = {
-  async getAll(supabase: any, userId: string) {
+  async getAll(supabase: TypedSupabaseClient, userId: string) {
     const { data, error } = await supabase
       .from('accounts')
       .select('*')
@@ -20,7 +20,7 @@ export const accountsService = {
     return data as Account[];
   },
 
-  async getById(supabase: any, id: string) {
+  async getById(supabase: TypedSupabaseClient, id: string) {
     const { data, error } = await supabase
       .from('accounts')
       .select('*')
@@ -31,7 +31,7 @@ export const accountsService = {
     return data as Account;
   },
 
-  async create(supabase: any, account: AccountInsert) {
+  async create(supabase: TypedSupabaseClient, account: AccountInsert) {
     const { data, error } = await supabase
       .from('accounts')
       .insert([account])
@@ -42,7 +42,7 @@ export const accountsService = {
     return data as Account;
   },
 
-  async update(supabase: any, id: string, updates: AccountUpdate) {
+  async update(supabase: TypedSupabaseClient, id: string, updates: AccountUpdate) {
     const { data, error } = await supabase
       .from('accounts')
       .update(updates)
@@ -54,7 +54,7 @@ export const accountsService = {
     return data as Account;
   },
 
-  async delete(supabase: any, id: string) {
+  async delete(supabase: TypedSupabaseClient, id: string) {
     const { error } = await supabase
       .from('accounts')
       .delete()
@@ -63,7 +63,7 @@ export const accountsService = {
     if (error) throw error;
   },
 
-  async getCreditCard(supabase: any, accountId: string) {
+  async getCreditCard(supabase: TypedSupabaseClient, accountId: string) {
     const { data, error } = await supabase
       .from('credit_cards')
       .select('*')
@@ -74,7 +74,7 @@ export const accountsService = {
     return data as CreditCard | null;
   },
 
-  async upsertCreditCard(supabase: any, data: CreditCardInsert) {
+  async upsertCreditCard(supabase: TypedSupabaseClient, data: CreditCardInsert) {
     const { data: result, error } = await supabase
       .from('credit_cards')
       .upsert(data, { onConflict: 'account_id' })
@@ -85,7 +85,7 @@ export const accountsService = {
     return result as CreditCard;
   },
 
-  async deleteCreditCard(supabase: any, accountId: string) {
+  async deleteCreditCard(supabase: TypedSupabaseClient, accountId: string) {
     const { error } = await supabase
       .from('credit_cards')
       .delete()
@@ -94,7 +94,7 @@ export const accountsService = {
     if (error) throw error;
   },
 
-  async getBillingCycles(supabase: any, creditCardId: string) {
+  async getBillingCycles(supabase: TypedSupabaseClient, creditCardId: string) {
     const { data, error } = await supabase
       .from('billing_cycles')
       .select('*')
@@ -105,7 +105,7 @@ export const accountsService = {
     return data as BillingCycle[];
   },
 
-  async addBillingCycle(supabase: any, cycle: BillingCycleInsert) {
+  async addBillingCycle(supabase: TypedSupabaseClient, cycle: BillingCycleInsert) {
     const { data, error } = await supabase
       .from('billing_cycles')
       .insert([cycle])
@@ -116,7 +116,7 @@ export const accountsService = {
     return data as BillingCycle;
   },
 
-  async deleteBillingCycle(supabase: any, cycleId: string) {
+  async deleteBillingCycle(supabase: TypedSupabaseClient, cycleId: string) {
     const { error } = await supabase
       .from('billing_cycles')
       .delete()
@@ -125,7 +125,7 @@ export const accountsService = {
     if (error) throw error;
   },
 
-  async findClosestBillingCycle(supabase: any, creditCardId: string, transactionDate: string) {
+  async findClosestBillingCycle(supabase: TypedSupabaseClient, creditCardId: string, transactionDate: string) {
     const txDate = transactionDate.slice(0, 10);
     const { data, error } = await supabase
       .from('billing_cycles')

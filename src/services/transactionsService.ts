@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from '@/types/supabase';
 import { Database } from '@/types/database.types';
 import { accountsService } from './accountsService';
 import { getBillingMonthFromRules, getBillingMonthFromCycle } from '@/lib/utils';
@@ -43,7 +44,7 @@ type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
 type TransactionUpdate = Database['public']['Tables']['transactions']['Update'];
 
 export const transactionsService = {
-  async getAll(supabase: any, userId: string, sortField: string = 'transaction_date') {
+  async getAll(supabase: TypedSupabaseClient, userId: string, sortField: string = 'transaction_date') {
     const { data, error } = await supabase
       .from('transactions')
       .select('*, accounts!transactions_account_id_fkey(name), categories(name)')
@@ -54,7 +55,7 @@ export const transactionsService = {
     return data;
   },
 
-  async getHouseholdTransactions(supabase: any, householdId: string) {
+  async getHouseholdTransactions(supabase: TypedSupabaseClient, householdId: string) {
     const { data, error } = await supabase
       .from('transactions')
       .select('*, accounts!transactions_account_id_fkey(name), categories(name), household_share_records(count)')
@@ -65,7 +66,7 @@ export const transactionsService = {
     return data;
   },
 
-  async create(supabase: any, transaction: TransactionInsert) {
+  async create(supabase: TypedSupabaseClient, transaction: TransactionInsert) {
     const billingMonth = await resolveBillingMonth(
       supabase,
       transaction.payment_method,
@@ -100,7 +101,7 @@ export const transactionsService = {
     return newTransaction as Transaction;
   },
 
-  async createInstallments(supabase: any, transaction: TransactionInsert, totalInstallments: number) {
+  async createInstallments(supabase: TypedSupabaseClient, transaction: TransactionInsert, totalInstallments: number) {
     const { id: _, ...transactionBase } = transaction;
     const baseDate = new Date(transaction.transaction_date || new Date());
 
@@ -178,7 +179,7 @@ export const transactionsService = {
     return [parent, ...(children || [])];
   },
 
-  async delete(supabase: any, id: string) {
+  async delete(supabase: TypedSupabaseClient, id: string) {
     // Obtener transacción antes de borrar
     const { data: transaction, error: fetchError } = await supabase
       .from('transactions')
@@ -215,7 +216,7 @@ export const transactionsService = {
   },
 
 
-  async update(supabase: any, id: string, updates: TransactionUpdate) {
+  async update(supabase: TypedSupabaseClient, id: string, updates: TransactionUpdate) {
     // Recalcular billing_month si cambió payment_method, account_id o transaction_date
     if (
       updates.payment_method !== undefined ||
@@ -239,7 +240,7 @@ export const transactionsService = {
         effectiveDate || new Date()
       );
 
-      (updates as any).billing_month = billingMonth;
+      (updates as Record<string, unknown>).billing_month = billingMonth;
     }
 
     const { data, error } = await supabase

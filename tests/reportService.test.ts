@@ -101,5 +101,34 @@ describe('reportService', () => {
       const monthsWithAmount = result.monthlyData.filter(m => m.amount > 0)
       expect(monthsWithAmount.length).toBeGreaterThan(0)
     })
+
+    it('agrupa transacciones cuyo categories.name es Servicios', () => {
+      const tx = makeTx({
+        type: 'expense',
+        categories: { name: 'Servicios' },
+      })
+      const result = reportService.getFixedExpenses([tx])
+
+      expect(result.items).toHaveLength(1)
+    })
+
+    it('excluye transacciones de tipo income', () => {
+      const tx = makeTx({ type: 'income' })
+      const result = reportService.getFixedExpenses([tx])
+
+      expect(result.items).toHaveLength(0)
+    })
+
+    it('monthlyData contiene nombres de meses correctos', () => {
+      const tx = makeTx({ type: 'subscription', amount: 1000, subscription_frequency: 'monthly' })
+      const result = reportService.getFixedExpenses([tx])
+
+      const expectedMonths = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      ]
+      const monthNames = result.monthlyData.map(m => m.month)
+      expect(monthNames).toEqual(expectedMonths)
+    })
   })
 })

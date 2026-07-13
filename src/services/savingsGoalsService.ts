@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from '@/types/supabase';
 import { Database } from '@/types/database.types';
 
 type SavingsGoal = Database['public']['Tables']['savings_goals']['Row'];
@@ -7,7 +7,7 @@ type SavingsGoalUpdate = Database['public']['Tables']['savings_goals']['Update']
 type GoalDeposit = Database['public']['Tables']['goal_deposits']['Row'];
 
 export const savingsGoalsService = {
-  async getAll(supabase: any, userId: string) {
+  async getAll(supabase: TypedSupabaseClient, userId: string) {
     const { data, error } = await supabase
       .from('savings_goals')
       .select('*')
@@ -19,7 +19,7 @@ export const savingsGoalsService = {
     return data as SavingsGoal[];
   },
 
-  async getForHousehold(supabase: any, householdId: string) {
+  async getForHousehold(supabase: TypedSupabaseClient, householdId: string) {
     const { data, error } = await supabase
       .from('savings_goals')
       .select('*')
@@ -30,7 +30,7 @@ export const savingsGoalsService = {
     return data as SavingsGoal[];
   },
 
-  async getDeposits(supabase: any, goalId: string) {
+  async getDeposits(supabase: TypedSupabaseClient, goalId: string) {
     const { data, error } = await supabase
       .from('goal_deposits')
       .select('*')
@@ -41,7 +41,7 @@ export const savingsGoalsService = {
     return data as GoalDeposit[];
   },
 
-  async create(supabase: any, goal: SavingsGoalInsert) {
+  async create(supabase: TypedSupabaseClient, goal: SavingsGoalInsert) {
     const { data, error } = await supabase
       .from('savings_goals')
       .insert([goal])
@@ -52,7 +52,7 @@ export const savingsGoalsService = {
     return data as SavingsGoal;
   },
 
-  async update(supabase: any, id: string, updates: SavingsGoalUpdate) {
+  async update(supabase: TypedSupabaseClient, id: string, updates: SavingsGoalUpdate) {
     const { data, error } = await supabase
       .from('savings_goals')
       .update(updates)
@@ -64,7 +64,7 @@ export const savingsGoalsService = {
     return data as SavingsGoal;
   },
 
-  async delete(supabase: any, id: string) {
+  async delete(supabase: TypedSupabaseClient, id: string) {
     const { error } = await supabase
       .from('savings_goals')
       .delete()

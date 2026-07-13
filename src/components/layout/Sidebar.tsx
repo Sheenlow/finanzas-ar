@@ -1,6 +1,6 @@
 'use client'
 
-import { authService } from '@/services/authService';
+import { authService } from '@/services/authService.client';
 import { useRouter, usePathname } from 'next/navigation';
 import { LayoutDashboard, Wallet, ArrowRightLeft, Target, LogOut, PieChart, Home, Moon, Sun, HelpCircle } from 'lucide-react';
 import Link from 'next/link';

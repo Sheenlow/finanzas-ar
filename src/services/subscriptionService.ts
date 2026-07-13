@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from '@/types/supabase';
 import { Database } from '@/types/database.types';
 import { resolveBillingMonth } from './transactionsService';
 
@@ -6,7 +6,7 @@ type Transaction = Database['public']['Tables']['transactions']['Row'];
 type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
 
 export const subscriptionService = {
-  async generateMissingSubscriptions(supabase: any, userId: string) {
+  async generateMissingSubscriptions(supabase: TypedSupabaseClient, userId: string) {
     const { data: recurringItems, error } = await supabase
       .from('transactions')
       .select('*')
