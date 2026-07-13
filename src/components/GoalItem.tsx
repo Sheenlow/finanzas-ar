@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-
+import confetti from 'canvas-confetti'
 import { savingsGoalsService } from '@/services/savingsGoalsService'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
@@ -13,8 +13,7 @@ import { cn } from '@/lib/utils'
 
 type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
 
-async function triggerConfetti() {
-  const confetti = (await import('canvas-confetti')).default
+function triggerConfetti() {
   confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
 }
 
@@ -32,6 +31,14 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
   const supabase = createClient()
   const isOwner = goal.user_id === userId
   const isCompleted = goal.current_amount >= goal.target_amount
+  const prevCompleted = useRef(isCompleted)
+
+  useEffect(() => {
+    if (isCompleted && !prevCompleted.current) {
+      triggerConfetti()
+    }
+    prevCompleted.current = isCompleted
+  }, [isCompleted])
 
   const handleDeposit = async () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) return
@@ -41,9 +48,6 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
       if (isOwner && !isHousehold) {
         const newAmount = Math.min(goal.current_amount + parseFloat(depositAmount), goal.target_amount)
         await savingsGoalsService.update(supabase, goal.id, { current_amount: newAmount })
-        if (newAmount >= goal.target_amount) {
-          await triggerConfetti()
-        }
       } else {
         const res = await fetch('/api/goals/deposit', {
           method: 'POST',
@@ -52,9 +56,6 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error)
-        if (data.newAmount >= goal.target_amount) {
-          await triggerConfetti()
-        }
       }
       
       setIsDepositModalOpen(false)
