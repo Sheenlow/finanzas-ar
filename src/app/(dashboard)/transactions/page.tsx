@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const TransactionForm = dynamic(() => import('@/components/forms/TransactionForm').then(m => ({ default: m.TransactionForm })));
-const TransactionItem = dynamic(() => import('@/components/TransactionItem').then(m => ({ default: m.TransactionItem })));
+const TransactionItem = dynamic(() => import('@/components/TransactionItem'));
 const RecurringExpenses = dynamic(() => import('@/components/RecurringExpenses').then(m => ({ default: m.RecurringExpenses })));
 
 export default async function TransactionsPage() {

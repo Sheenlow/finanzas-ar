@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import React from 'react'
 import { accountsService } from '@/services/accountsService'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -19,7 +20,7 @@ const TYPE_LABEL: Record<string, string> = {
 type Account = Database['public']['Tables']['accounts']['Row']
 type CreditCardRow = Database['public']['Tables']['credit_cards']['Row']
 
-export function AccountItem({ account, userId }: { account: Account, userId: string }) {
+function AccountItem({ account, userId }: { account: Account, userId: string }) {
   const [isEditing, setIsEditing] = useState(false)
   const [cardData, setCardData] = useState<CreditCardRow | null>(null)
   const router = useRouter()
@@ -95,3 +96,5 @@ export function AccountItem({ account, userId }: { account: Account, userId: str
     </div>
   )
 }
+
+export default React.memo(AccountItem)

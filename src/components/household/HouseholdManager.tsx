@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Home, Mail, Copy, Check, Pencil, AlertTriangle, Trash2 } from 'lucide-react'
 import { HouseholdMonthlyReport } from './HouseholdMonthlyReport'
@@ -85,12 +85,12 @@ export function HouseholdManager({
   }, [totalIncome, members, incomeMap])
 
   const membersWithoutIncome = useMemo(() => members.filter(m => !incomeMap.has(m.user_id)), [members, incomeMap])
-  const totalSplit = members.reduce((sum, m) => sum + m.split_percentage, 0)
-  const splitValid = Math.abs(totalSplit - 100) < 0.01
+  const totalSplit = useMemo(() => members.reduce((sum, m) => sum + m.split_percentage, 0), [members])
+  const splitValid = useMemo(() => Math.abs(totalSplit - 100) < 0.01, [totalSplit])
 
-  const wrap = async (fn: () => Promise<void>) => { setLoading(true); setError(null); try { await fn() } catch (err: any) { setError(err.message) } finally { setLoading(false) } }
+  const wrap = useCallback(async (fn: () => Promise<void>) => { setLoading(true); setError(null); try { await fn() } catch (err: any) { setError(err.message) } finally { setLoading(false) } }, [])
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     if (!householdName.trim()) return
     await wrap(async () => {
       const res = await fetch('/api/households/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: householdName.trim() }) })
@@ -99,46 +99,48 @@ export function HouseholdManager({
       setHousehold(data.household); setHouseholdName(''); setRole('admin')
       setMembers([{ id: '', household_id: data.household.id, user_id: userId, role: 'admin' as const, split_percentage: 100, joined_at: new Date().toISOString() }])
     })
-  }
+  }, [householdName, wrap, userId])
 
-  const handleRename = async () => {
+  const handleRename = useCallback(async () => {
     if (!household || !editHouseholdName.trim()) return
     await wrap(async () => {
       const res = await fetch('/api/households/rename', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ householdId: household.id, name: editHouseholdName.trim() }) })
       if (!res.ok) { const data = await res.json(); throw new Error(data.error) }
       setHousehold(prev => prev ? { ...prev, name: editHouseholdName.trim() } : null); setEditingName(false)
     })
-  }
+  }, [household, editHouseholdName, wrap])
 
-  const handleLeave = () => wrap(async () => {
+  const handleLeave = useCallback(() => wrap(async () => {
     const res = await fetch('/api/households/leave', { method: 'POST' })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error)
     if (data.householdDeleted) window.location.href = '/hogar'
     else router.refresh()
-  })
+  }), [wrap, router])
 
-  const handleDelete = () => wrap(async () => {
+  const handleDelete = useCallback(() => wrap(async () => {
     const res = await fetch('/api/households/delete', { method: 'DELETE' })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error)
     window.location.href = '/hogar'
-  })
+  }), [wrap])
 
-  const handleTransferAdmin = (memberId: string) => wrap(async () => { const newRole = await transferAdmin(memberId); setRole(newRole) })
-  const handleRemoveMember = (memberId: string) => wrap(async () => { await removeMember(memberId) })
+  const handleTransferAdmin = useCallback((memberId: string) => wrap(async () => { const newRole = await transferAdmin(memberId); setRole(newRole) }), [wrap, transferAdmin])
+  const handleRemoveMember = useCallback((memberId: string) => wrap(async () => { await removeMember(memberId) }), [wrap, removeMember])
 
-  const handleApplyAutoSplit = () => {
+  const handleApplyAutoSplit = useCallback(() => {
     if (membersWithoutIncome.length > 0) {
       const names = membersWithoutIncome.map(m => `• ${m.profiles?.full_name || m.user_id}`).join('\n')
       setError(`Los siguientes miembros no tienen ingresos declarados:\n${names}\n\nDeclará sus ingresos mensuales antes de aplicar el split.`)
       return
     }
     wrap(async () => { await applyAutoSplit(autoSplitMap) })
-  }
+  }, [membersWithoutIncome, wrap, applyAutoSplit, autoSplitMap])
 
-  const handleSaveSplit = (memberId: string) => { if (!splitValue) return; wrap(async () => { await updateSplit(memberId, parseFloat(splitValue)); setEditingSplit(null) }) }
-  const handleSaveIncome = () => wrap(async () => { await updateIncome(parseFloat(incomeValue) || 0); setEditingIncome(false) })
+  const handleSaveSplit = useCallback((memberId: string) => { if (!splitValue) return; wrap(async () => { await updateSplit(memberId, parseFloat(splitValue)); setEditingSplit(null) }) }, [splitValue, wrap, updateSplit])
+  const handleSaveIncome = useCallback(() => wrap(async () => { await updateIncome(parseFloat(incomeValue) || 0); setEditingIncome(false) }), [incomeValue, wrap, updateIncome])
+
+  const handleOpenLeave = useCallback(() => setShowLeaveModal(true), [])
 
   if (!household) return (
     <CreateHouseholdForm householdName={householdName} onNameChange={setHouseholdName} onCreate={handleCreate} loading={loading} error={error} />
@@ -180,7 +182,7 @@ export function HouseholdManager({
         onEditIncome={(val) => { setEditingIncome(true); setIncomeValue(val > 0 ? val.toString() : '') }}
         onIncomeValueChange={setIncomeValue} onSaveIncome={handleSaveIncome} onCancelIncome={() => setEditingIncome(false)}
         onTransferAdmin={handleTransferAdmin} onRemoveMember={handleRemoveMember}
-        onApplyAutoSplit={handleApplyAutoSplit} onLeave={() => setShowLeaveModal(true)} loading={loading}
+        onApplyAutoSplit={handleApplyAutoSplit} onLeave={handleOpenLeave} loading={loading}
       />
 
       {isAdmin && (

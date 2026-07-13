@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import React from 'react'
 import { transactionsService } from '@/services/transactionsService'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -8,7 +9,7 @@ import { TransactionForm } from './forms/TransactionForm'
 import { ArrowRightLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export function TransactionItem({ transaction, userId }: { transaction: any, userId: string }) {
+function TransactionItem({ transaction, userId }: { transaction: any, userId: string }) {
   const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -77,3 +78,5 @@ export function TransactionItem({ transaction, userId }: { transaction: any, use
     </div>
   )
 }
+
+export default React.memo(TransactionItem)

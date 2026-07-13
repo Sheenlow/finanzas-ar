@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { useDebounce } from '@/hooks/useDebounce'
 import {
   Rocket, Wallet, ArrowRightLeft, LayoutDashboard, Home, Target,
   Bot, HelpCircle, ChevronDown, Search
@@ -247,15 +248,16 @@ const sections: Section[] = [
 
 export function AyudaContent() {
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 250)
 
-  const filteredSections = search.trim()
+  const filteredSections = debouncedSearch.trim()
     ? sections
         .map(section => ({
           ...section,
           items: section.items.filter(
             item =>
-              item.question.toLowerCase().includes(search.toLowerCase()) ||
-              item.answer.toLowerCase().includes(search.toLowerCase())
+              item.question.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+              item.answer.toLowerCase().includes(debouncedSearch.toLowerCase())
           ),
         }))
         .filter(section => section.items.length > 0)
@@ -332,7 +334,7 @@ export function AyudaContent() {
 
       {filteredSections.length === 0 && (
         <p className="text-center text-muted-foreground py-8">
-          No se encontraron resultados para &ldquo;{search}&rdquo;.
+          No se encontraron resultados para &ldquo;{debouncedSearch}&rdquo;.
         </p>
       )}
 

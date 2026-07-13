@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 import { motion, AnimatePresence } from 'framer-motion'
-import zxcvbn from 'zxcvbn'
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,11 +17,22 @@ function SignUpForm() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState<{ score: number } | null>(null)
   
   const { executeRecaptcha } = useGoogleReCaptcha()
   const router = useRouter()
 
-  const passwordStrength = zxcvbn(password)
+  useEffect(() => {
+    if (!password) {
+      setPasswordStrength(null)
+      return
+    }
+    let cancelled = false
+    import('zxcvbn').then(mod => {
+      if (!cancelled) setPasswordStrength(mod.default(password))
+    })
+    return () => { cancelled = true }
+  }, [password])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +43,7 @@ function SignUpForm() {
     }
     
     if (!acceptTerms) return setError('Debes aceptar los términos y condiciones.')
-    if (passwordStrength.score < 3) return setError('La contraseña no es suficientemente fuerte.')
+    if (passwordStrength && passwordStrength.score < 3) return setError('La contraseña no es suficientemente fuerte.')
 
     setLoading(true)
     setError(null)
@@ -98,7 +108,7 @@ function SignUpForm() {
       </div>
       
       {/* Password Strength Meter */}
-      {password && (
+      {password && passwordStrength && (
         <div className="space-y-1">
           <div className="flex gap-1 h-1">
             {[1, 2, 3, 4].map((i) => (
@@ -120,10 +130,10 @@ function SignUpForm() {
       {error && <p className="text-xs text-rose-600 font-medium">{error}</p>}
       <button 
         type="submit" 
-        disabled={loading || passwordStrength.score < 3} 
+        disabled={loading || !!(passwordStrength && passwordStrength.score < 3)} 
         className={cn(
           "w-full py-2 rounded-xl font-bold transition-all",
-          (loading || passwordStrength.score < 3)
+          (loading || !!(passwordStrength && passwordStrength.score < 3))
             ? "bg-secondary text-muted-foreground cursor-not-allowed" 
             : "bg-primary text-primary-foreground hover:opacity-90"
         )}

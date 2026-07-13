@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import React from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import confetti from 'canvas-confetti'
 import { savingsGoalsService } from '@/services/savingsGoalsService'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
@@ -12,7 +12,12 @@ import { cn } from '@/lib/utils'
 
 type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
 
-export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
+async function triggerConfetti() {
+  const confetti = (await import('canvas-confetti')).default
+  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+}
+
+function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
   goal: SavingsGoal
   userId: string
   onUpdate: () => void
@@ -23,7 +28,6 @@ export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
   const [depositAmount, setDepositAmount] = useState('')
   const [loading, setLoading] = useState(false)
-  
   const supabase = createClient()
   const isOwner = goal.user_id === userId
   const isCompleted = goal.current_amount >= goal.target_amount
@@ -38,7 +42,7 @@ export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
         const newAmount = Math.min(goal.current_amount + parseFloat(depositAmount), goal.target_amount)
         await savingsGoalsService.update(supabase, goal.id, { current_amount: newAmount })
         if (newAmount >= goal.target_amount) {
-          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+          triggerConfetti()
         }
       } else {
         const res = await fetch('/api/goals/deposit', {
@@ -49,7 +53,7 @@ export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error)
         if (data.newAmount >= goal.target_amount) {
-          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+          triggerConfetti()
         }
       }
       
@@ -168,3 +172,5 @@ export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
     </motion.div>
   )
 }
+
+export const GoalItem = React.memo(GoalItemInner)

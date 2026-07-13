@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { transactionsService } from '@/services/transactionsService'
 import { accountsService } from '@/services/accountsService'
 import { useRouter } from 'next/navigation'
@@ -77,7 +77,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
     if (acc) f.setCurrency(acc.currency as 'ARS' | 'USD')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     f.setLoading(true)
     try {
@@ -116,7 +116,7 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
       if (!isEditing) f.resetForm()
     } catch (error) { console.error('Error saving transaction:', error) }
     finally { f.setLoading(false) }
-  }
+  }, [f, isEditing, initialTransaction, householdId, splitPreview, supabase, router, userId, onSuccess])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-6 border rounded-2xl bg-card shadow-sm">
