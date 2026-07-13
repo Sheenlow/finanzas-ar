@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { GoalForm } from './forms/GoalForm'
-import { GoalItem } from './GoalItem'
+import GoalItem from './GoalItem'
 import { Database } from '@/types/database.types'
 import { savingsGoalsService } from '@/services/savingsGoalsService'
 import { createClient } from '@/lib/supabase/client'

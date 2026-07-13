@@ -15,6 +15,51 @@ interface Section {
   items: { question: string; answer: string }[]
 }
 
+function AccordionItem({ section }: { section: Section }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const reduceMotion = useReducedMotion()
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors select-none text-left"
+      >
+        <section.icon className="w-5 h-5 text-primary shrink-0" />
+        <span className="text-base font-semibold flex-1">{section.title}</span>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          {section.items.length}
+        </span>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
+        >
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
+          >
+            <div className="px-5 pb-4 space-y-4">
+              {section.items.map((item, i) => (
+                <div key={i} className="border-t border-border/50 pt-4 first:border-0 first:pt-0">
+                  <p className="text-sm font-medium text-foreground mb-1.5">{item.question}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 const sections: Section[] = [
   {
     id: 'primeros-pasos',
@@ -262,51 +307,6 @@ export function AyudaContent() {
         }))
         .filter(section => section.items.length > 0)
     : sections
-
-  const AccordionItem = ({ section }: { section: Section }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const reduceMotion = useReducedMotion()
-
-    return (
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors select-none text-left"
-        >
-          <section.icon className="w-5 h-5 text-primary shrink-0" />
-          <span className="text-base font-semibold flex-1">{section.title}</span>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            {section.items.length}
-          </span>
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
-          >
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </motion.div>
-        </button>
-        <AnimatePresence initial={false}>
-          {isOpen && (
-            <motion.div
-              initial={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
-            >
-              <div className="px-5 pb-4 space-y-4">
-                {section.items.map((item, i) => (
-                  <div key={i} className="border-t border-border/50 pt-4 first:border-0 first:pt-0">
-                    <p className="text-sm font-medium text-foreground mb-1.5">{item.question}</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    )
-  }
 
   const leftSections = filteredSections.filter((_, i) => i % 2 === 0)
   const rightSections = filteredSections.filter((_, i) => i % 2 === 1)

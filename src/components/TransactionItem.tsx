@@ -79,4 +79,4 @@ function TransactionItem({ transaction, userId }: { transaction: any, userId: st
   )
 }
 
-export default React.memo(TransactionItem)
+export default TransactionItem

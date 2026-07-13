@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { TransactionItem } from '@/components/TransactionItem'
+import TransactionItem from '@/components/TransactionItem'
 
 vi.mock('@/services/transactionsService', () => ({
   transactionsService: {

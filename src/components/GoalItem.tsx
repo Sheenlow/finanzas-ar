@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import React from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import confetti from 'canvas-confetti'
 import { savingsGoalsService } from '@/services/savingsGoalsService'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
@@ -12,8 +13,7 @@ import { cn } from '@/lib/utils'
 
 type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
 
-async function triggerConfetti() {
-  const confetti = (await import('canvas-confetti')).default
+function triggerConfetti() {
   confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
 }
 
@@ -173,4 +173,4 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
   )
 }
 
-export const GoalItem = React.memo(GoalItemInner)
+export default GoalItemInner
