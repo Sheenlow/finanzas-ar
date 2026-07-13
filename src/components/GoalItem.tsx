@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
@@ -31,23 +31,18 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
   const supabase = createClient()
   const isOwner = goal.user_id === userId
   const isCompleted = goal.current_amount >= goal.target_amount
-  const prevCompleted = useRef(isCompleted)
-
-  useEffect(() => {
-    if (isCompleted && !prevCompleted.current) {
-      triggerConfetti()
-    }
-    prevCompleted.current = isCompleted
-  }, [isCompleted])
 
   const handleDeposit = async () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) return
     setLoading(true)
     
     try {
+      let willComplete = false
+
       if (isOwner && !isHousehold) {
         const newAmount = Math.min(goal.current_amount + parseFloat(depositAmount), goal.target_amount)
         await savingsGoalsService.update(supabase, goal.id, { current_amount: newAmount })
+        willComplete = newAmount >= goal.target_amount
       } else {
         const res = await fetch('/api/goals/deposit', {
           method: 'POST',
@@ -56,11 +51,20 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error)
+        willComplete = data.newAmount >= goal.target_amount
       }
       
       setIsDepositModalOpen(false)
       setDepositAmount('')
       onUpdate()
+
+      if (!isCompleted && willComplete) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            triggerConfetti()
+          })
+        })
+      }
     } catch (error) {
       console.error('Error depositing:', error)
     } finally {
