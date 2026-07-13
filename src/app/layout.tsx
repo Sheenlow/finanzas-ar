@@ -23,6 +23,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Finanzas AR',
   },
+  other: {
+    'theme-color': '#2d2a26',
+  },
 };
 
 export default function RootLayout({

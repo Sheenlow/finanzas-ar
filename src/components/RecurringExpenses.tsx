@@ -114,6 +114,7 @@ export function RecurringExpenses({ recurring, userId }: { recurring: any[], use
                   onClick={() => setEditing(item.id)}
                   className="p-2 text-xs hover:bg-secondary rounded-lg font-medium transition-colors"
                   title="Editar"
+                  aria-label="Editar"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
@@ -125,6 +126,7 @@ export function RecurringExpenses({ recurring, userId }: { recurring: any[], use
                     "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
                   )}
                   title="Generar este mes"
+                  aria-label="Generar este mes"
                 >
                   {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                 </button>

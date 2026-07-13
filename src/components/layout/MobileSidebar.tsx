@@ -48,7 +48,7 @@ export function MobileSidebar() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setOpen(false)}
           />
-          <aside className="absolute left-0 top-0 h-full w-64 bg-card border-r border-border p-6 flex flex-col gap-6 rounded-r-3xl shadow-xl animate-slide-in">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-card border-r border-border p-6 flex flex-col gap-6 rounded-r-3xl shadow-xl motion-safe:animate-slide-in">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-2 border border-border rounded-xl">

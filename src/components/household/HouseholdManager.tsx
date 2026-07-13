@@ -162,7 +162,7 @@ export function HouseholdManager({
             ) : (
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold">{household.name}</h2>
-                {isAdmin && <button onClick={() => { setEditingName(true); setEditHouseholdName(household.name) }} className="p-1 text-xs text-muted-foreground hover:bg-secondary rounded" title="Renombrar"><Pencil className="w-3.5 h-3.5" /></button>}
+                {isAdmin && <button onClick={() => { setEditingName(true); setEditHouseholdName(household.name) }} className="p-1 text-xs text-muted-foreground hover:bg-secondary rounded" title="Renombrar" aria-label="Renombrar hogar"><Pencil className="w-3.5 h-3.5" /></button>}
               </div>
             )}
             <p className="text-xs text-muted-foreground">{members.length} miembro{members.length !== 1 ? 's' : ''}</p>
@@ -197,7 +197,7 @@ export function HouseholdManager({
           {invite.inviteLink && (
             <div className="mt-3 flex items-center gap-2 bg-secondary/50 p-3 rounded-xl">
               <code className="flex-1 text-xs break-all">{invite.inviteLink}</code>
-              <button onClick={invite.handleCopyLink} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
+              <button onClick={invite.handleCopyLink} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors" aria-label="Copiar enlace">
                 {invite.copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>

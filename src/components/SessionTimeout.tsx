@@ -50,12 +50,12 @@ export function SessionTimeout() {
   if (!showWarning) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="session-timeout-title">
       <div className="bg-card border border-border rounded-2xl p-8 shadow-xl max-w-sm w-full mx-4 text-center space-y-4">
         <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
           <Clock className="w-6 h-6 text-amber-600" />
         </div>
-        <h2 className="text-lg font-semibold">Sesión por vencer</h2>
+        <h2 id="session-timeout-title" className="text-lg font-semibold">Sesión por vencer</h2>
         <p className="text-sm text-muted-foreground">
           Llevás un tiempo sin actividad. Si no respondés, cerraremos tu sesión por seguridad.
         </p>

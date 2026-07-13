@@ -18,11 +18,11 @@ export function DeleteModal({ open, householdName, error, loading, onConfirm, on
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl">
         <div className="flex items-center gap-2 mb-4">
           <Trash2 className="w-5 h-5 text-red-500" />
-          <h3 className="text-lg font-semibold">Eliminar hogar</h3>
+          <h3 id="delete-modal-title" className="text-lg font-semibold">Eliminar hogar</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
           ¿Estás seguro de eliminar "{householdName}"? Se perderán TODOS los datos de gastos compartidos.

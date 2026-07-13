@@ -302,6 +302,7 @@ export function AccountForm({ userId, initialAccount, onSuccess }: {
                         type="button"
                         onClick={() => removeBillingCycle(cycle.id)}
                         className="text-muted-foreground hover:text-rose-500 transition-colors"
+                        aria-label="Eliminar ciclo de facturación"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>

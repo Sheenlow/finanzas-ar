@@ -15,6 +15,7 @@ export function AmountInput({ value, onChange, required = true }: AmountInputPro
       onChange={e => onChange(e.target.value)}
       className="w-full px-4 py-2 border border-border rounded-xl text-sm"
       required={required}
+      aria-label="Monto"
     />
   )
 }

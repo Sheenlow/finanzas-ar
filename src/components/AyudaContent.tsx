@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
   Rocket, Wallet, ArrowRightLeft, LayoutDashboard, Home, Target,
   Bot, HelpCircle, ChevronDown, Search
@@ -263,6 +263,7 @@ export function AyudaContent() {
 
   const AccordionItem = ({ section }: { section: Section }) => {
     const [isOpen, setIsOpen] = useState(false)
+    const reduceMotion = useReducedMotion()
 
     return (
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -277,7 +278,7 @@ export function AyudaContent() {
           </span>
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
           >
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </motion.div>
@@ -285,10 +286,10 @@ export function AyudaContent() {
         <AnimatePresence initial={false}>
           {isOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
+              initial={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
+              exit={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
             >
               <div className="px-5 pb-4 space-y-4">
                 {section.items.map((item, i) => (
@@ -325,6 +326,7 @@ export function AyudaContent() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+          aria-label="Buscar en la ayuda"
         />
       </div>
 

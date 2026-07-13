@@ -17,6 +17,7 @@ export function SplitEditor({ value, onChange, onSave, onCancel, loading }: Spli
         onChange={e => onChange(e.target.value)}
         className="w-16 px-2 py-1 border border-border rounded-lg text-sm text-center"
         placeholder="%"
+        aria-label="Porcentaje de reparto"
         autoFocus
       />
       <span className="text-xs text-muted-foreground">%</span>

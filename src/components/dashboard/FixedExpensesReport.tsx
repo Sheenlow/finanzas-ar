@@ -170,7 +170,7 @@ export function FixedExpensesReport({ data, monthlyData }: Props) {
                   <div className={cn("flex items-center gap-1", header.align === 'text-right' ? 'justify-end' : header.align === 'text-center' ? 'justify-center' : 'justify-start')}>
                     {header.label}
                     {header.key !== 'installments' && (
-                      <button onClick={() => openFilter(header.key)} className="p-1 hover:bg-secondary rounded">
+                      <button onClick={() => openFilter(header.key)} className="p-1 hover:bg-secondary rounded" aria-label="Filtrar">
                         <Filter size={14} />
                       </button>
                     )}
@@ -243,6 +243,7 @@ export function FixedExpensesReport({ data, monthlyData }: Props) {
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={safePage <= 1}
             className="p-1.5 rounded-lg hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Anterior"
           >
             <ChevronLeft size={16} />
           </button>
@@ -281,6 +282,7 @@ export function FixedExpensesReport({ data, monthlyData }: Props) {
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={safePage >= totalPages}
             className="p-1.5 rounded-lg hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Siguiente"
           >
             <ChevronRight size={16} />
           </button>
@@ -290,6 +292,7 @@ export function FixedExpensesReport({ data, monthlyData }: Props) {
           value={pageSize}
           onChange={e => setPageSize(Number(e.target.value))}
           className="text-xs border border-border rounded-lg px-2 py-1.5 bg-card text-muted-foreground cursor-pointer"
+          aria-label="Resultados por página"
         >
           {[10, 25, 50, 100].map(n => (
             <option key={n} value={n}>{n}</option>

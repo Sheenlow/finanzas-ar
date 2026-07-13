@@ -2,24 +2,50 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { resolveBillingMonth } from '@/services/transactionsService';
 
+function shouldGenerateThisMonth(
+  frequency: string | null | undefined,
+  currentMonth: number,
+  parentDateStr: string | null
+): boolean {
+  if (!frequency || frequency === 'monthly') return true;
+
+  const parentMonth = parentDateStr
+    ? new Date(parentDateStr).getMonth() + 1
+    : currentMonth;
+
+  if (frequency === 'quarterly') {
+    const diff = (currentMonth - parentMonth + 12) % 12;
+    return diff % 3 === 0;
+  }
+
+  if (frequency === 'biannual') {
+    const diff = (currentMonth - parentMonth + 12) % 12;
+    return diff % 6 === 0;
+  }
+
+  if (frequency === 'annual') {
+    return currentMonth === parentMonth;
+  }
+
+  return true;
+}
+
 export async function GET(req: Request) {
-  // 1. Verificación de seguridad
   const authHeader = req.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  // 2. Cliente admin para operaciones de fondo
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // 3. Obtener suscripciones base
   const { data: subscriptions, error } = await supabase
     .from('transactions')
     .select('*')
-    .eq('type', 'subscription')
+    .in('type', ['subscription', 'service'])
+    .eq('is_installment', false)
     .is('parent_transaction_id', null);
 
   if (error) {
@@ -38,7 +64,10 @@ export async function GET(req: Request) {
   const generated = [];
 
   for (const sub of subscriptions) {
-    // Verificar si ya existe una transacción para este mes/año hija de esta suscripción
+    if (!shouldGenerateThisMonth(sub.subscription_frequency, currentMonth, sub.transaction_date)) {
+      continue;
+    }
+
     const { data: existing, error: checkError } = await supabase
       .from('transactions')
       .select('id')
@@ -46,33 +75,37 @@ export async function GET(req: Request) {
       .gte('transaction_date', startOfMonth)
       .lt('transaction_date', endOfMonth);
 
-    if (!existing || existing.length === 0) {
-      const billingMonth = await resolveBillingMonth(
-        supabase,
-        sub.payment_method,
-        sub.account_id,
-        today
-      );
-
-      // Crear nueva transacción
-      const { data, error: insertError } = await supabase
-        .from('transactions')
-        .insert([{
-          user_id: sub.user_id,
-          account_id: sub.account_id,
-          amount: sub.amount,
-          currency: sub.currency,
-          type: 'subscription',
-          description: sub.description,
-          transaction_date: today.toISOString(),
-          payment_method: sub.payment_method,
-          parent_transaction_id: sub.id,
-          subscription_frequency: sub.subscription_frequency,
-          billing_month: billingMonth,
-        }]);
-      
-      if (!insertError) generated.push(sub.id);
+    if (checkError) {
+      console.error('Error checking existing:', checkError);
+      continue;
     }
+
+    if (existing && existing.length > 0) continue;
+
+    const billingMonth = await resolveBillingMonth(
+      supabase,
+      sub.payment_method,
+      sub.account_id,
+      today
+    );
+
+    const { error: insertError } = await supabase
+      .from('transactions')
+      .insert([{
+        user_id: sub.user_id,
+        account_id: sub.account_id,
+        amount: sub.amount,
+        currency: sub.currency,
+        type: sub.type,
+        description: sub.description,
+        transaction_date: today.toISOString(),
+        payment_method: sub.payment_method,
+        parent_transaction_id: sub.id,
+        subscription_frequency: sub.subscription_frequency,
+        billing_month: billingMonth,
+      }]);
+
+    if (!insertError) generated.push(sub.id);
   }
 
   return NextResponse.json({ message: 'Proceso completado', generatedCount: generated.length });

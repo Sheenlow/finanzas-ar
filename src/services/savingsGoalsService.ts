@@ -1,5 +1,6 @@
 import type { TypedSupabaseClient } from '@/types/supabase';
 import { Database } from '@/types/database.types';
+import { auditService } from './auditService';
 
 type SavingsGoal = Database['public']['Tables']['savings_goals']['Row'];
 type SavingsGoalInsert = Database['public']['Tables']['savings_goals']['Insert'];
@@ -49,6 +50,14 @@ export const savingsGoalsService = {
       .single();
     
     if (error) throw error;
+
+    auditService.log({
+      userId: data.user_id,
+      action: 'create',
+      entityType: 'goal',
+      entityId: data.id,
+    }).catch(() => {});
+
     return data as SavingsGoal;
   },
 

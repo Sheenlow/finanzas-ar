@@ -1,5 +1,6 @@
 import type { TypedSupabaseClient } from '@/types/supabase';
 import { Database } from '@/types/database.types';
+import { auditService } from './auditService';
 
 type Account = Database['public']['Tables']['accounts']['Row'];
 type AccountInsert = Database['public']['Tables']['accounts']['Insert'];
@@ -39,6 +40,14 @@ export const accountsService = {
       .single();
     
     if (error) throw error;
+
+    auditService.log({
+      userId: data.user_id,
+      action: 'create',
+      entityType: 'account',
+      entityId: data.id,
+    }).catch(() => {});
+
     return data as Account;
   },
 
@@ -51,6 +60,14 @@ export const accountsService = {
       .single();
     
     if (error) throw error;
+
+    auditService.log({
+      userId: data.user_id,
+      action: 'update',
+      entityType: 'account',
+      entityId: id,
+    }).catch(() => {});
+
     return data as Account;
   },
 

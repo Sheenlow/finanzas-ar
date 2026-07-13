@@ -471,6 +471,38 @@ export interface Database {
           created_at?: string
         }
       }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          entity_type: string
+          entity_id: string
+          details: Json
+          ip_address: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          entity_type: string
+          entity_id: string
+          details?: Json
+          ip_address?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: string
+          entity_type?: string
+          entity_id?: string
+          details?: Json
+          ip_address?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {}
     Functions: {}

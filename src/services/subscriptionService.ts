@@ -5,6 +5,34 @@ import { resolveBillingMonth } from './transactionsService';
 type Transaction = Database['public']['Tables']['transactions']['Row'];
 type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
 
+function shouldGenerateThisMonth(
+  frequency: string | null | undefined,
+  currentMonth: number,
+  parentDateStr: string | null
+): boolean {
+  if (!frequency || frequency === 'monthly') return true;
+
+  const parentMonth = parentDateStr
+    ? new Date(parentDateStr).getMonth() + 1
+    : currentMonth;
+
+  if (frequency === 'quarterly') {
+    const diff = (currentMonth - parentMonth + 12) % 12;
+    return diff % 3 === 0;
+  }
+
+  if (frequency === 'biannual') {
+    const diff = (currentMonth - parentMonth + 12) % 12;
+    return diff % 6 === 0;
+  }
+
+  if (frequency === 'annual') {
+    return currentMonth === parentMonth;
+  }
+
+  return true;
+}
+
 export const subscriptionService = {
   async generateMissingSubscriptions(supabase: TypedSupabaseClient, userId: string) {
     const { data: recurringItems, error } = await supabase
@@ -26,16 +54,19 @@ export const subscriptionService = {
     const endOfMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00Z`;
 
     for (const item of (recurringItems || []) as Transaction[]) {
+      if (!shouldGenerateThisMonth(item.subscription_frequency, currentMonth, item.transaction_date)) {
+        continue;
+      }
+
       const { data: existing, error: checkError } = await supabase
         .from('transactions')
         .select('id')
         .eq('parent_transaction_id', item.id)
         .gte('transaction_date', startOfMonth)
-        .lt('transaction_date', endOfMonth)
-        .maybeSingle();
+        .lt('transaction_date', endOfMonth);
 
       if (checkError) throw checkError;
-      if (existing) continue;
+      if (existing && existing.length > 0) continue;
 
       const billingMonth = await resolveBillingMonth(
         supabase,

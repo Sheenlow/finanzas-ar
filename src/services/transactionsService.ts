@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import type { TypedSupabaseClient } from '@/types/supabase';
 import { Database } from '@/types/database.types';
 import { accountsService } from './accountsService';
+import { auditService } from './auditService';
 import { getBillingMonthFromRules, getBillingMonthFromCycle } from '@/lib/utils';
 
 function addMonths(date: Date, months: number): Date {
@@ -98,6 +99,14 @@ export const transactionsService = {
       await accountsService.update(supabase, transaction.account_id, { balance: newBalance });
     }
     
+    auditService.log({
+      userId: newTransaction.user_id,
+      action: 'create',
+      entityType: 'transaction',
+      entityId: newTransaction.id,
+      details: { amount: newTransaction.amount, type: newTransaction.type },
+    }).catch(() => {});
+
     return newTransaction as Transaction;
   },
 
@@ -160,6 +169,17 @@ export const transactionsService = {
 
     if (childError) throw childError;
 
+    const allInstallments = [parent, ...(children || [])];
+    allInstallments.forEach((t) => {
+      auditService.log({
+        userId: t.user_id,
+        action: 'create',
+        entityType: 'transaction',
+        entityId: t.id,
+        details: { amount: t.amount, type: t.type },
+      }).catch(() => {});
+    });
+
     // Actualizar saldo de cuenta (solo la primera cuota)
     const { data: account, error: accountError } = await supabase
       .from('accounts')
@@ -183,7 +203,7 @@ export const transactionsService = {
     // Obtener transacción antes de borrar
     const { data: transaction, error: fetchError } = await supabase
       .from('transactions')
-      .select('account_id, amount, type, is_installment, installment_number')
+      .select('account_id, amount, type, is_installment, installment_number, user_id')
       .eq('id', id)
       .single();
     
@@ -195,6 +215,13 @@ export const transactionsService = {
       .eq('id', id);
     
     if (deleteError) throw deleteError;
+
+    auditService.log({
+      userId: transaction.user_id,
+      action: 'delete',
+      entityType: 'transaction',
+      entityId: id,
+    }).catch(() => {});
 
     // Revertir saldo solo si fue la primera cuota (o una transacción normal)
     if (!transaction.is_installment || transaction.installment_number === 1) {
@@ -251,6 +278,14 @@ export const transactionsService = {
       .single();
     
     if (error) throw error;
+
+    auditService.log({
+      userId: data.user_id,
+      action: 'update',
+      entityType: 'transaction',
+      entityId: id,
+    }).catch(() => {});
+
     return data as Transaction;
   },
 };

@@ -127,6 +127,7 @@ export function MemberList({
                         <button
                           onClick={() => onEditIncome(income)}
                           className="p-1 text-xs text-muted-foreground hover:bg-secondary rounded"
+                          aria-label="Editar ingreso"
                         >
                           <Percent className="w-3.5 h-3.5" />
                         </button>
@@ -205,6 +206,7 @@ export function MemberList({
                         <button
                           onClick={() => onEditSplit(member.id, manualSplit)}
                           className="p-1 text-xs text-muted-foreground hover:bg-secondary rounded"
+                          aria-label="Editar porcentaje"
                         >
                           <Percent className="w-3.5 h-3.5" />
                         </button>
@@ -215,6 +217,7 @@ export function MemberList({
                             onClick={() => onTransferAdmin(member.id)}
                             className="p-1 text-xs text-blue-500 hover:bg-blue-50 rounded"
                             title="Transferir admin"
+                            aria-label="Transferir administración"
                           >
                             <UserCog className="w-3.5 h-3.5" />
                           </button>
@@ -222,6 +225,7 @@ export function MemberList({
                             onClick={() => onRemoveMember(member.id)}
                             className="p-1 text-xs text-rose-500 hover:bg-rose-50 rounded"
                             title="Expulsar"
+                            aria-label="Expulsar miembro"
                           >
                             <UserMinus className="w-3.5 h-3.5" />
                           </button>

@@ -18,5 +18,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
+  await supabase
+    .from('bot_pending')
+    .delete()
+    .lt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
   return NextResponse.json({ ok: true });
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { savingsGoalsService } from '@/services/savingsGoalsService'
 import { createClient } from '@/lib/supabase/client'
@@ -27,6 +27,7 @@ export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
   const supabase = createClient()
   const isOwner = goal.user_id === userId
   const isCompleted = goal.current_amount >= goal.target_amount
+  const reduceMotion = useReducedMotion()
 
   const handleDeposit = async () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) return
@@ -89,7 +90,7 @@ export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
 
   return (
     <motion.div 
-      animate={isCompleted ? { scale: 1.02, borderColor: '#22c55e' } : { scale: 1, borderColor: 'rgba(229, 231, 235, 0.5)' }}
+      animate={reduceMotion ? {} : (isCompleted ? { scale: 1.02, borderColor: '#22c55e' } : { scale: 1, borderColor: 'rgba(229, 231, 235, 0.5)' })}
       className={cn("group p-5 bg-card border rounded-2xl flex flex-col gap-4 shadow-sm", isCompleted ? "border-emerald-500" : "border-border")}
     >
       <div className="flex items-center justify-between">
@@ -140,19 +141,20 @@ export function GoalItem({ goal, userId, onUpdate, isHousehold, creatorName }: {
 
       <AnimatePresence>
         {isDepositModalOpen && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="deposit-modal-title">
             <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={reduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                exit={reduceMotion ? { opacity: 0, scale: 1 } : { opacity: 0, scale: 0.9 }}
                 className="bg-card p-6 rounded-2xl shadow-xl w-full max-w-sm space-y-4"
             >
-                <h3 className="text-lg font-semibold">Agregar ahorro</h3>
+                <h3 id="deposit-modal-title" className="text-lg font-semibold">Agregar ahorro</h3>
                 <input 
                     type="number" 
                     value={depositAmount} 
                     onChange={e => setDepositAmount(e.target.value)}
                     placeholder="Monto a depositar"
+                    aria-label="Monto a depositar"
                     className="w-full p-2 border border-border rounded-xl"
                 />
                 <div className="flex gap-2">

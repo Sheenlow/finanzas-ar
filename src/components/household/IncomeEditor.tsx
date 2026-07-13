@@ -18,6 +18,7 @@ export function IncomeEditor({ value, onChange, onSave, onCancel, loading }: Inc
         onChange={e => onChange(e.target.value)}
         className="w-28 px-2 py-1 border border-border rounded-lg text-sm text-center"
         placeholder="0.00"
+        aria-label="Ingreso mensual"
         autoFocus
       />
       <button

@@ -83,11 +83,11 @@ export function SettlementModal({ isOpen, onClose, balance, currentUserId }: Pro
   const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-labelledby="settlement-modal-title">
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Liquidar con {otherUserName}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition-colors">
+          <h3 id="settlement-modal-title" className="text-lg font-semibold">Liquidar con {otherUserName}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition-colors" aria-label="Cerrar">
             <X className="w-5 h-5" />
           </button>
         </div>

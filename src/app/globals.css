@@ -36,6 +36,12 @@
   --color-secondary: hsl(240 5% 18%);
   --color-secondary-foreground: hsl(40 20% 90%);
   --color-muted: hsl(240 5% 18%);
+  /*
+   * Accesibilidad: --color-muted-foreground sobre --color-muted tiene una relación
+   * de contraste ~5:1 en modo oscuro. Cumple WCAG AA (4.5:1) para texto normal,
+   * pero está en el límite para texto pequeño. Si se necesita mayor contraste,
+   * aumentar la luminosidad a ~68% (hsl(40 20% 68%)) lograría ~7:1 (AAA).
+   */
   --color-muted-foreground: hsl(40 20% 60%);
   --color-border: hsl(240 5% 22%);
   --color-input: hsl(240 5% 22%);
@@ -88,8 +94,16 @@
   }
 }
 
-.animate-slide-in {
-  animation: slideIn 0.2s ease-out;
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in {
+    animation: none;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (max-width: 400px) {

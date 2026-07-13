@@ -33,6 +33,7 @@ export function CreateHouseholdForm({ householdName, onNameChange, onCreate, loa
             onClick={onCreate}
             disabled={loading || !householdName.trim()}
             className="px-5 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
+            aria-label="Crear hogar"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
           </button>

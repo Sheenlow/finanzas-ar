@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { X, Home, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useUser } from '@/components/UserProvider'
@@ -89,6 +89,8 @@ export function UserMenu() {
 
   if (loading || !userData) return null
 
+  const reduceMotion = useReducedMotion()
+
   return (
     <>
       <div className="relative" ref={dropdownRef}>
@@ -105,9 +107,9 @@ export function UserMenu() {
         <AnimatePresence>
           {dropdownOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
               className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden"
             >
               <div className="px-4 py-3 border-b border-border/50">
@@ -141,22 +143,25 @@ export function UserMenu() {
       <AnimatePresence>
         {modalOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
             onClick={() => setModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-modal-title"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={reduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={reduceMotion ? { opacity: 0, scale: 1 } : { opacity: 0, scale: 0.95 }}
               onClick={e => e.stopPropagation()}
               className="bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-5"
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Mis datos</h2>
-                <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <h2 id="profile-modal-title" className="text-lg font-semibold">Mis datos</h2>
+                <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Cerrar">
                   <X size={18} />
                 </button>
               </div>

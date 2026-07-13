@@ -16,11 +16,11 @@ export function LeaveModal({ open, householdName, isAdmin, otherMembersCount, lo
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-labelledby="leave-modal-title">
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl">
         <div className="flex items-center gap-2 mb-4">
           <LogOut className="w-5 h-5 text-amber-500" />
-          <h3 className="text-lg font-semibold">Salirse del hogar</h3>
+          <h3 id="leave-modal-title" className="text-lg font-semibold">Salirse del hogar</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
           ¿Estás seguro de salir del hogar "{householdName}"? Perderás acceso a todos los gastos compartidos.

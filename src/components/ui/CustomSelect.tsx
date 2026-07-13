@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +22,7 @@ interface CustomSelectProps {
 export function CustomSelect({ value, onChange, options, placeholder, disabled, className }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -54,9 +55,9 @@ export function CustomSelect({ value, onChange, options, placeholder, disabled, 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
             className="absolute z-10 w-full mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden"
           >
             {options.map((option) => (
