@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Landmark, ArrowRightLeft, TrendingUp } from 'lucide-react'
 
 interface Props {
@@ -12,7 +12,6 @@ interface Props {
 
 export function ConsolidatedBalance({ totalArs, totalUsd, rate }: Props) {
   const [preferredCurrency, setPreferredCurrency] = useState<'ARS' | 'USD'>('ARS')
-  const reduceMotion = useReducedMotion()
 
   const consolidatedTotal = preferredCurrency === 'ARS' 
     ? totalArs + (totalUsd * rate)
@@ -29,9 +28,9 @@ export function ConsolidatedBalance({ totalArs, totalUsd, rate }: Props) {
 
   return (
     <motion.div 
-      initial={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: reduceMotion ? 0 : 0.4 }}
+      transition={{ duration: 0.4 }}
       className="p-6 bg-card border border-border/50 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
     >
       <div className="space-y-1">

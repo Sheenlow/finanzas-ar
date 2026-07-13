@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useDebounce } from '@/hooks/useDebounce'
 import {
   Rocket, Wallet, ArrowRightLeft, LayoutDashboard, Home, Target,
@@ -17,7 +17,6 @@ interface Section {
 
 function AccordionItem({ section }: { section: Section }) {
   const [isOpen, setIsOpen] = useState(false)
-  const reduceMotion = useReducedMotion()
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -32,7 +31,7 @@ function AccordionItem({ section }: { section: Section }) {
         </span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
+          transition={{ duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
         >
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </motion.div>
@@ -40,10 +39,10 @@ function AccordionItem({ section }: { section: Section }) {
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
-            initial={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+            initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={reduceMotion ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-            transition={reduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
           >
             <div className="px-5 pb-4 space-y-4">
               {section.items.map((item, i) => (
