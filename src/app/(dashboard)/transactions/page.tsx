@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { transactionsService } from '@/services/transactionsService';
 import { redirect } from 'next/navigation';
-import { TransactionForm } from '@/components/forms/TransactionForm';
-import { TransactionItem } from '@/components/TransactionItem';
-import { RecurringExpenses } from '@/components/RecurringExpenses';
+import dynamic from 'next/dynamic';
+
+const TransactionForm = dynamic(() => import('@/components/forms/TransactionForm').then(m => ({ default: m.TransactionForm })));
+const TransactionItem = dynamic(() => import('@/components/TransactionItem').then(m => ({ default: m.TransactionItem })));
+const RecurringExpenses = dynamic(() => import('@/components/RecurringExpenses').then(m => ({ default: m.RecurringExpenses })));
 
 export default async function TransactionsPage() {
   const supabase = await createClient();

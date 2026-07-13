@@ -44,3 +44,6 @@ next-env.d.ts
 
 # supabase
 /supabase/migrations/
+
+# docs
+PLAN_DE_MEJORAS.md

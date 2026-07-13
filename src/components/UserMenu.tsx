@@ -1,23 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Home, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-
-interface UserData {
-  email: string
-  fullName: string
-  firstName: string
-  lastName: string
-}
-
-interface HouseholdInfo {
-  id: string
-  name: string
-  role: string
-}
+import { useUser } from '@/components/UserProvider'
 
 function splitFullName(name: string) {
   const parts = name.trim().split(/\s+/)
@@ -35,11 +23,9 @@ function getInitials(name: string) {
 }
 
 export function UserMenu() {
-  const [userData, setUserData] = useState<UserData | null>(null)
-  const [household, setHousehold] = useState<HouseholdInfo | null>(null)
+  const { user, profile, household, loading, refresh } = useUser()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
 
   const [editName, setEditName] = useState('')
   const [editCurrency, setEditCurrency] = useState<'ARS' | 'USD'>('ARS')
@@ -48,45 +34,21 @@ export function UserMenu() {
 
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  const userData = useMemo(() => {
+    if (!user) return null
+    const fullName = profile?.full_name || user.fullName
+    const { firstName, lastName } = splitFullName(fullName)
+    return { email: user.email, fullName, firstName, lastName }
+  }, [user, profile])
+
   useEffect(() => {
-    const supabase = createClient()
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || ''
-        const { firstName, lastName } = splitFullName(fullName)
-        setUserData({ email: user.email || '', fullName, firstName, lastName })
-        setEditName(fullName)
-
-        const { data: profile } = (await supabase
-          .from('profiles')
-          .select('preferred_currency, full_name')
-          .eq('id', user.id)
-          .maybeSingle()) as { data: { preferred_currency: 'ARS' | 'USD'; full_name: string | null } | null }
-
-        if (profile) {
-          setEditCurrency(profile.preferred_currency || 'ARS')
-          if (profile.full_name) {
-            const { firstName: fn, lastName: ln } = splitFullName(profile.full_name)
-            setUserData(prev => prev ? { ...prev, fullName: profile.full_name!, firstName: fn, lastName: ln } : prev)
-            setEditName(profile.full_name)
-          }
-        }
-
-        const { data: membership } = (await supabase
-          .from('household_members')
-          .select('households(id, name), role')
-          .eq('user_id', user.id)
-          .maybeSingle()) as { data: { households: { id: string; name: string }; role: 'admin' | 'member' } | null }
-
-        if (membership) {
-          setHousehold({ id: membership.households.id, name: membership.households.name, role: membership.role })
-        }
-      }
-      setLoading(false)
+    if (userData) {
+      setEditName(userData.fullName)
     }
-    load()
-  }, [])
+    if (profile) {
+      setEditCurrency(profile.preferred_currency)
+    }
+  }, [userData, profile])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -103,21 +65,19 @@ export function UserMenu() {
     setSaveMessage('')
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('No autenticado')
+      if (!user?.id) throw new Error('No autenticado')
 
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           full_name: editName.trim(),
           preferred_currency: editCurrency,
-        })
-        .eq('id', user.id)
+        }, { onConflict: 'id' })
 
       if (error) throw error
 
-      const { firstName, lastName } = splitFullName(editName.trim())
-      setUserData(prev => prev ? { ...prev, fullName: editName.trim(), firstName, lastName } : prev)
+      refresh()
       setSaveMessage('Guardado correctamente')
       setTimeout(() => setModalOpen(false), 800)
     } catch (err: any) {

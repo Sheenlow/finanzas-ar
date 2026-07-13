@@ -7,6 +7,7 @@ import { savingsGoalsService } from '@/services/savingsGoalsService';
 import { exchangeRateService } from '@/services/exchangeRateService';
 import { cryptoPriceService } from '@/services/cryptoPriceService';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { getEffectiveMonth } from '@/lib/utils';
 import { AnimatedCard } from '@/components/AnimatedCard';
 import { MonthSelector } from '@/components/MonthSelector';
@@ -31,27 +32,37 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const params = await searchParams;
   const selectedMonth = params.month || new Date().toISOString().slice(0, 7);
 
-  const { data: profile } = (await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .maybeSingle()) as { data: { full_name: string | null } | null };
+  const [
+    profileResult,
+    accounts,
+    transactions,
+    goals,
+    categoriesResult,
+    exchangeRate,
+    cryptoPrices,
+    membershipResult,
+    botConfigExisting,
+    botLinkResult,
+  ] = await Promise.all([
+    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    accountsService.getAll(supabase, user.id),
+    transactionsService.getAll(supabase, user.id),
+    savingsGoalsService.getAll(supabase, user.id),
+    supabase.from('categories').select('id, name, color').order('name'),
+    exchangeRateService.getRate(),
+    cryptoPriceService.getPrices(),
+    supabase.from('household_members').select('*, households(id, name)').eq('user_id', user.id).maybeSingle(),
+    supabase.from('bot_config').select('link_token').eq('user_id', user.id).maybeSingle(),
+    supabase.from('bot_users').select('telegram_user_id').eq('supabase_user_id', user.id).maybeSingle(),
+  ]);
+
+  const profile = (profileResult as any)?.data as { full_name: string | null } | null;
+  const categories: { id: string; name: string; color: string }[] = (categoriesResult as any)?.data || [];
+  const membership = (membershipResult as any)?.data as { split_percentage: number; household_id: string; households: { id: string; name: string } | null } | null;
 
   const greetingName = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+  const categoryMap = new Map<string, { id: string; name: string; color: string }>((categories || []).map((c) => [c.id, c]));
 
-  const accounts = await accountsService.getAll(supabase, user.id);
-  const transactions = await transactionsService.getAll(supabase, user.id);
-  const goals = await savingsGoalsService.getAll(supabase, user.id);
-  let householdGoals: any[] = [];
-
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name, color')
-    .order('name');
-  const categoryMap = new Map((categories || []).map((c: any) => [c.id, c]));
-
-  const exchangeRate = await exchangeRateService.getRate();
-  const cryptoPrices = await cryptoPriceService.getPrices();
   let totalArs = 0;
   let totalUsd = 0;
 
@@ -75,19 +86,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   );
 
   let botConfig: { link_token: string } | null = null
-  let botLink: { telegram_user_id: number } | null = null
+  const botConfigData = (botConfigExisting as any)?.data
 
-  // Force-create bot_config with a fresh token using admin client (bypasses RLS)
-  const newToken = crypto.randomUUID()
-  const { data: existing } = await adminClient
-    .from('bot_config')
-    .select('link_token')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (existing?.link_token) {
-    botConfig = { link_token: existing.link_token }
+  if (botConfigData?.link_token) {
+    botConfig = botConfigData
   } else {
+    const newToken = crypto.randomUUID()
     const { error: upsertErr } = await adminClient
       .from('bot_config')
       .upsert({ user_id: user.id, link_token: newToken }, { onConflict: 'user_id' })
@@ -95,12 +99,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     else botConfig = { link_token: newToken }
   }
 
-  const { data: link } = await supabase
-    .from('bot_users')
-    .select('telegram_user_id')
-    .eq('supabase_user_id', user.id)
-    .maybeSingle()
-  botLink = link
+  const botLink = (botLinkResult as any)?.data
 
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -117,21 +116,25 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   let householdMembers: any[] = [];
   let householdTransactions: any[] = [];
   let sharedTransactionIds: string[] = [];
+  let householdGoals: any[] = [];
   let mySplitPercentage = 0;
-
-  const { data: membership } = (await supabase
-    .from('household_members')
-    .select('*, households(id, name)')
-    .eq('user_id', user.id)
-    .maybeSingle()) as { data: { split_percentage: number; household_id: string; households: { id: string; name: string } | null } | null };
 
   if (membership) {
     mySplitPercentage = membership.split_percentage;
 
-    const { data: incomes } = await supabase
-      .from('household_incomes')
-      .select('*')
-      .eq('household_id', membership.household_id);
+    const [
+      { data: incomes },
+      { data: members },
+      hhTransactions,
+      { data: sharedRecs },
+      hhGoals,
+    ] = await Promise.all([
+      supabase.from('household_incomes').select('*').eq('household_id', membership.household_id),
+      supabase.from('household_members').select('*, profiles(full_name)').eq('household_id', membership.household_id),
+      transactionsService.getHouseholdTransactions(supabase, membership.household_id),
+      adminClient.from('household_share_records').select('transaction_id').eq('household_id', membership.household_id),
+      savingsGoalsService.getForHousehold(supabase, membership.household_id),
+    ]);
 
     if (incomes && incomes.length > 0) {
       const incomeMap = new Map(incomes.map((i: any) => [i.user_id, i.monthly_income_ars]));
@@ -145,25 +148,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       }
     }
 
-    const { data: members } = await supabase
-      .from('household_members')
-      .select('*, profiles(full_name)')
-      .eq('household_id', membership.household_id);
     householdMembers = members || [];
 
-    const hhTransactions = await transactionsService.getHouseholdTransactions(supabase, membership.household_id);
     householdTransactions = hhTransactions.filter((t: any) => {
       const effectiveMonth = getEffectiveMonth(t);
       return effectiveMonth === selectedMonth;
     });
 
-    const { data: sharedRecs } = await adminClient
-      .from('household_share_records')
-      .select('transaction_id')
-      .eq('household_id', membership.household_id);
     sharedTransactionIds = Array.from(new Set((sharedRecs || []).map((r: any) => r.transaction_id)));
 
-    householdGoals = await savingsGoalsService.getForHousehold(supabase, membership.household_id);
+    householdGoals = hhGoals;
   }
 
   const hhShare = mySplitPercentage / 100;
@@ -266,7 +260,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </section>
         )}
 
-        <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />
+        <Suspense fallback={<div className="p-6 bg-card border border-border/50 rounded-3xl animate-pulse h-32" />}>
+          <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />
+        </Suspense>
 
         <section className="my-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
