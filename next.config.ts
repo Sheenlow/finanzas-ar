@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { resolve } from "path";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const csp = [
   "default-src 'self'",
@@ -7,7 +8,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://www.google.com https://www.googleapis.com https://api.openai.com https://dolarapi.com https://api.coingecko.com https://api.telegram.org",
+  "connect-src 'self' https://*.supabase.co https://www.google.com https://www.googleapis.com https://api.openai.com https://dolarapi.com https://api.coingecko.com https://api.telegram.org https://*.ingest.sentry.io",
   "frame-src 'self' https://www.google.com",
   "frame-ancestors 'none'",
   "form-action 'self'",
@@ -37,4 +38,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  widenClientFileUpload: true,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+});
