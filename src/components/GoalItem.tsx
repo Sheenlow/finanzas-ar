@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import confetti from 'canvas-confetti'
+
 import { savingsGoalsService } from '@/services/savingsGoalsService'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils'
 
 type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
 
-function triggerConfetti() {
+async function triggerConfetti() {
+  const confetti = (await import('canvas-confetti')).default
   confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
 }
 
@@ -94,7 +95,7 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
   return (
     <motion.div 
       animate={isCompleted ? { scale: 1.02, borderColor: '#22c55e' } : { scale: 1, borderColor: 'rgba(229, 231, 235, 0.5)' }}
-      className={cn("group p-5 bg-card border rounded-2xl flex flex-col gap-4 shadow-sm", isCompleted ? "border-emerald-500" : "border-border")}
+      className={cn("group p-5 bg-card border rounded-2xl flex flex-col gap-4 shadow-sm animate-scale-in", isCompleted ? "border-emerald-500" : "border-border")}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -144,13 +145,8 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
 
       <AnimatePresence>
         {isDepositModalOpen && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="deposit-modal-title">
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-card p-6 rounded-2xl shadow-xl w-full max-w-sm space-y-4"
-            >
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="deposit-modal-title">
+            <motion.div className="bg-card p-6 rounded-2xl shadow-xl w-full max-w-sm space-y-4 animate-scale-in">
                 <h3 id="deposit-modal-title" className="text-lg font-semibold">Agregar ahorro</h3>
                 <input 
                     type="number" 
@@ -172,4 +168,4 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
   )
 }
 
-export default GoalItemInner
+export const GoalItem = React.memo(GoalItemInner)

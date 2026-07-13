@@ -65,17 +65,9 @@ export function AnimatedCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{
-        type: "tween",
-        duration: 0.3,
-        ease: "easeOut",
-        delay: delay,
-      }}
       style={{ willChange: 'transform' }}
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]",
+        "group relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] animate-fade-in",
         styles.borderHover,
         className
       )}

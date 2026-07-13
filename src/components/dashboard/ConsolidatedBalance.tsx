@@ -27,12 +27,7 @@ export function ConsolidatedBalance({ totalArs, totalUsd, rate }: Props) {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="p-6 bg-card border border-border/50 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
-    >
+    <motion.div className="p-6 bg-card border border-border/50 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-slide-up">
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <Landmark className="w-4 h-4" />

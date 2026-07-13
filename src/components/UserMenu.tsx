@@ -104,12 +104,7 @@ export function UserMenu() {
 
         <AnimatePresence>
           {dropdownOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden"
-            >
+            <motion.div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden animate-slide-down">
               <div className="px-4 py-3 border-b border-border/50">
                 <p className="text-sm font-semibold truncate">{userData.fullName}</p>
                 <p className="text-xs text-muted-foreground truncate">{userData.email}</p>
@@ -141,21 +136,15 @@ export function UserMenu() {
       <AnimatePresence>
         {modalOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in"
             onClick={() => setModalOpen(false)}
             role="dialog"
             aria-modal="true"
             aria-labelledby="profile-modal-title"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
               onClick={e => e.stopPropagation()}
-              className="bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-5"
+              className="bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-5 animate-scale-in"
             >
               <div className="flex items-center justify-between">
                 <h2 id="profile-modal-title" className="text-lg font-semibold">Mis datos</h2>

@@ -2,18 +2,32 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { AnimatedCard } from '@/components/AnimatedCard'
 import { MonthlyTransactions } from '@/components/dashboard/MonthlyTransactions'
 import { DashboardHouseholdSummary } from '@/components/dashboard/DashboardHouseholdSummary'
 import { DashboardGoals } from '@/components/dashboard/DashboardGoals'
 import { DashboardLayout } from '@/components/DashboardLayout'
-import { TrendsChart } from '@/components/dashboard/TrendsChart'
-import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart'
-import { FixedExpensesReport } from '@/components/dashboard/FixedExpensesReport'
-import { MonthlyFixedExpensesReport } from '@/components/dashboard/MonthlyFixedExpensesReport'
 import { MonthSelector } from '@/components/MonthSelector'
 import { ConsolidatedBalance } from '@/components/dashboard/ConsolidatedBalance'
 import { getEffectiveMonth } from '@/lib/utils'
+
+const TrendsChart = dynamic(() => import('@/components/dashboard/TrendsChart').then(mod => mod.TrendsChart), {
+  ssr: false,
+  loading: () => <div className="h-64" />
+})
+const CategoryPieChart = dynamic(() => import('@/components/dashboard/CategoryPieChart').then(mod => mod.CategoryPieChart), {
+  ssr: false,
+  loading: () => <div className="h-64" />
+})
+const FixedExpensesReport = dynamic(() => import('@/components/dashboard/FixedExpensesReport').then(mod => mod.FixedExpensesReport), {
+  ssr: false,
+  loading: () => <div className="h-64" />
+})
+const MonthlyFixedExpensesReport = dynamic(() => import('@/components/dashboard/MonthlyFixedExpensesReport').then(mod => mod.MonthlyFixedExpensesReport), {
+  ssr: false,
+  loading: () => <div className="h-64" />
+})
 
 interface Props {
   greetingName: string

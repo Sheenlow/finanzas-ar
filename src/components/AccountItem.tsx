@@ -97,4 +97,4 @@ function AccountItem({ account, userId }: { account: Account, userId: string }) 
   )
 }
 
-export default AccountItem
+export default React.memo(AccountItem)

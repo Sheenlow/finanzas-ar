@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { savingsGoalsService } from '@/services/savingsGoalsService';
 import { redirect } from 'next/navigation';
-import { GoalsContainer } from '@/components/GoalsContainer';
+import dynamic from 'next/dynamic';
+const GoalsContainer = dynamic(() => import('@/components/GoalsContainer').then(m => ({ default: m.GoalsContainer })));
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export default async function GoalsPage() {

@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import GoalItem from '@/components/GoalItem'
+import { GoalItem } from '@/components/GoalItem'
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({})),

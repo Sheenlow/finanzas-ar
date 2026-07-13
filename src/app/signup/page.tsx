@@ -1,12 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import zxcvbn from 'zxcvbn'
 
 function SignUpForm() {
   const [email, setEmail] = useState('')
@@ -18,11 +17,22 @@ function SignUpForm() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState<{ score: number } | null>(null)
   
   const { executeRecaptcha } = useGoogleReCaptcha()
   const router = useRouter()
 
-  const passwordStrength = password ? zxcvbn(password) : null
+  useEffect(() => {
+    if (!password) {
+      setPasswordStrength(null)
+      return
+    }
+    let cancelled = false
+    import('zxcvbn').then(mod => {
+      if (!cancelled) setPasswordStrength(mod.default(password))
+    })
+    return () => { cancelled = true }
+  }, [password])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
