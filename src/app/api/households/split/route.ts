@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { householdSplitService } from '@/services/householdSplitService';
-import { requireOrigin } from '@/lib/security';
+import { requireOrigin, checkRateLimit, getClientIp } from '@/lib/security';
 
 export async function POST(req: Request) {
   if (!requireOrigin(req)) {
     return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
+  const ip = getClientIp(req)
+  const rate = checkRateLimit('household-split:' + ip, 20, 60_000)
+  if (!rate.allowed) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta de nuevo en un minuto.' }, { status: 429 })
   }
 
   try {

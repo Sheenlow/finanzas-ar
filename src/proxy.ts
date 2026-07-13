@@ -1,14 +1,25 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_PATHS = ['/login', '/signup', '/join', '/api', '/auth/callback']
+const PUBLIC_PAGE_PATHS = ['/login', '/signup', '/join', '/auth/callback']
+const PUBLIC_API_PATHS = [
+  '/api/auth/register',
+  '/api/bot/telegram',
+  '/api/cron/',
+  '/api/webhooks/',
+]
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PAGE_PATHS.some((path) => pathname.startsWith(path)) ||
+    PUBLIC_API_PATHS.some((path) => pathname.startsWith(path))
+}
+
+function isApiPath(pathname: string) {
+  return pathname.startsWith('/api')
+}
 
 export async function proxy(request: NextRequest) {
-  const isPublicPath = PUBLIC_PATHS.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  )
-
-  if (isPublicPath) {
+  if (isPublicPath(request.nextUrl.pathname)) {
     return NextResponse.next()
   }
 
@@ -49,9 +60,15 @@ export async function proxy(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user) {
+      if (isApiPath(request.nextUrl.pathname)) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      }
       return NextResponse.redirect(new URL('/login', request.url))
     }
   } catch {
+    if (isApiPath(request.nextUrl.pathname)) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

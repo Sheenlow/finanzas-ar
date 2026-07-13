@@ -1,14 +1,16 @@
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
+function getClient() {
+  return createClient();
+}
 
 export const authService = {
   async signInWithEmail(email: string, password: string) {
-    return await supabase.auth.signInWithPassword({ email, password });
+    return await getClient().auth.signInWithPassword({ email, password });
   },
 
   async signUpWithEmail(email: string, password: string) {
-    return await supabase.auth.signUp({
+    return await getClient().auth.signUp({
       email,
       password,
       options: {
@@ -19,7 +21,7 @@ export const authService = {
 
   async signInWithGoogle() {
     document.cookie = `oauth_origin=${encodeURIComponent(window.location.origin)}; path=/; max-age=300; SameSite=Lax`;
-    return await supabase.auth.signInWithOAuth({
+    return await getClient().auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -28,7 +30,7 @@ export const authService = {
   },
 
   async signOut() {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await getClient().auth.signOut();
     if (error) throw error;
   },
 };

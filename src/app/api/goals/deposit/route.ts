@@ -1,11 +1,17 @@
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { requireOrigin } from '@/lib/security'
+import { requireOrigin, checkRateLimit, getClientIp } from '@/lib/security'
 
 export async function POST(request: Request) {
   if (!requireOrigin(request)) {
     return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 })
+  }
+
+  const ip = getClientIp(request)
+  const rate = checkRateLimit('goal-deposit:' + ip, 10, 60_000)
+  if (!rate.allowed) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta de nuevo en un minuto.' }, { status: 429 })
   }
 
   try {
