@@ -42,7 +42,7 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
         const newAmount = Math.min(goal.current_amount + parseFloat(depositAmount), goal.target_amount)
         await savingsGoalsService.update(supabase, goal.id, { current_amount: newAmount })
         if (newAmount >= goal.target_amount) {
-          triggerConfetti()
+          await triggerConfetti()
         }
       } else {
         const res = await fetch('/api/goals/deposit', {
@@ -53,7 +53,7 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error)
         if (data.newAmount >= goal.target_amount) {
-          triggerConfetti()
+          await triggerConfetti()
         }
       }
       
