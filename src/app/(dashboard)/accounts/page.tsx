@@ -1,10 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { accountsService } from '@/services/accountsService';
 import { redirect } from 'next/navigation';
-import dynamic from 'next/dynamic';
-
-const AccountForm = dynamic(() => import('@/components/forms/AccountForm').then(m => ({ default: m.AccountForm })));
-const AccountItem = dynamic(() => import('@/components/AccountItem'));
+import { AccountForm } from '@/components/forms/AccountForm';
+import AccountItem from '@/components/AccountItem';
 
 export default async function AccountsPage() {
   const supabase = await createClient();
