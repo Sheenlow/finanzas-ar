@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { safeRedirect } from '@/lib/redirect'
+import { redirect } from 'next/navigation'
 import { AyudaContent } from '@/components/AyudaContent'
 
 export default async function AyudaPage() {
@@ -7,7 +7,7 @@ export default async function AyudaPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return safeRedirect('/login')
+    return redirect('/login')
   }
 
   return (

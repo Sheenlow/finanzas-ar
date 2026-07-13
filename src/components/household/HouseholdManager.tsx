@@ -222,9 +222,9 @@ export function HouseholdManager({ initialHousehold, initialMembers, myRole, use
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       if (data.householdDeleted) {
-        window.location.href = '/hogar'
+                      window.location.href = '/hogar'
       } else {
-        window.location.reload()
+        router.refresh()
       }
     } catch (err: any) {
       setError(err.message)

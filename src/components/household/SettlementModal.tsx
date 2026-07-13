@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function SettlementModal({ isOpen, onClose, balance, currentUserId }: Props) {
+  const router = useRouter()
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -64,7 +66,7 @@ export function SettlementModal({ isOpen, onClose, balance, currentUserId }: Pro
       }
 
       onClose()
-      window.location.reload()
+      router.refresh()
     } catch (err: any) {
       setError(err.message)
     } finally {

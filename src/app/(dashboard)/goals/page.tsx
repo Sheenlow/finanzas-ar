@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { savingsGoalsService } from '@/services/savingsGoalsService';
-import { safeRedirect } from '@/lib/redirect';
+import { redirect } from 'next/navigation';
 import { GoalsContainer } from '@/components/GoalsContainer';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
@@ -9,7 +9,7 @@ export default async function GoalsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return safeRedirect('/login');
+    return redirect('/login');
   }
 
   const personalGoals = await savingsGoalsService.getAll(supabase, user.id);

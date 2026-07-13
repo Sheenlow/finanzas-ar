@@ -123,7 +123,7 @@ export const transactionsService = {
         installments_total: totalInstallments,
         installment_number: 1,
       }])
-      .select('id')
+      .select()
       .single();
     
     if (parentError) throw parentError;
@@ -152,9 +152,10 @@ export const transactionsService = {
       });
     }
 
-    const { error: childError } = await supabase
+    const { data: children, error: childError } = await supabase
       .from('transactions')
-      .insert(childTransactions);
+      .insert(childTransactions)
+      .select();
 
     if (childError) throw childError;
 
@@ -174,7 +175,7 @@ export const transactionsService = {
       await accountsService.update(supabase, transaction.account_id, { balance: newBalance });
     }
     
-    return [parent, ...childTransactions];
+    return [parent, ...(children || [])];
   },
 
   async delete(supabase: any, id: string) {

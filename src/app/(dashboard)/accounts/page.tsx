@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { accountsService } from '@/services/accountsService';
-import { safeRedirect } from '@/lib/redirect';
+import { redirect } from 'next/navigation';
 import { AccountForm } from '@/components/forms/AccountForm';
 import { AccountItem } from '@/components/AccountItem';
 
@@ -9,7 +9,7 @@ export default async function AccountsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return safeRedirect('/login');
+    return redirect('/login');
   }
 
   const accounts = await accountsService.getAll(supabase, user.id);

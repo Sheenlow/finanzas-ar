@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
-import { safeRedirect } from '@/lib/redirect';
+import { redirect } from 'next/navigation';
 import { HouseholdManager } from '@/components/household/HouseholdManager';
 import { savingsGoalsService } from '@/services/savingsGoalsService';
 
@@ -11,7 +11,7 @@ export default async function HogarPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return safeRedirect('/login');
+    return redirect('/login');
   }
 
   const adminClient = createAdminClient(

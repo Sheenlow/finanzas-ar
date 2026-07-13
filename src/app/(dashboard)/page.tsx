@@ -6,7 +6,7 @@ import { reportService } from '@/services/reportService';
 import { savingsGoalsService } from '@/services/savingsGoalsService';
 import { exchangeRateService } from '@/services/exchangeRateService';
 import { cryptoPriceService } from '@/services/cryptoPriceService';
-import { safeRedirect } from '@/lib/redirect';
+import { redirect } from 'next/navigation';
 import { getEffectiveMonth } from '@/lib/utils';
 import { AnimatedCard } from '@/components/AnimatedCard';
 import { MonthSelector } from '@/components/MonthSelector';
@@ -25,7 +25,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return safeRedirect('/login');
+    return redirect('/login');
   }
 
   const params = await searchParams;

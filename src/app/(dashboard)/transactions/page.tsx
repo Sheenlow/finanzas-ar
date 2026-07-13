@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { transactionsService } from '@/services/transactionsService';
-import { safeRedirect } from '@/lib/redirect';
+import { redirect } from 'next/navigation';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { TransactionItem } from '@/components/TransactionItem';
 import { RecurringExpenses } from '@/components/RecurringExpenses';
@@ -10,7 +10,7 @@ export default async function TransactionsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return safeRedirect('/login');
+    return redirect('/login');
   }
 
   const transactions = await transactionsService.getAll(supabase, user.id, 'created_at');
