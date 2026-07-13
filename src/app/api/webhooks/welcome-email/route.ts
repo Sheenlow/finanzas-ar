@@ -27,7 +27,7 @@ const WELCOME_HTML = (name: string) => `<!DOCTYPE html>
       Accede desde <a href="https://t.me/FinanzasArBot" style="color: #0ea5e9;">t.me/FinanzasArBot</a> o buscalo como <strong>@FinanzasArBot</strong> en Telegram.
     </p>
     <div style="text-align: center; margin-top: 32px;">
-      <a href="https://finanzas-ar-app.vercel.app"
+      <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://finanzas-ar-app.vercel.app'}"
          style="display: inline-block; background: #0ea5e9; color: white; padding: 12px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
         Ir a Finanzas AR
       </a>

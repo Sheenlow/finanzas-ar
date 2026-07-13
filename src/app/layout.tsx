@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Finanzas AR",
   description: "Gestioná tus finanzas personales, gastos compartidos y metas de ahorro en un solo lugar.",
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Finanzas AR',
+  },
 };
 
 export default function RootLayout({

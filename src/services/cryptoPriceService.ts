@@ -1,3 +1,5 @@
+const COINGECKO_API_URL = process.env.COINGECKO_API_URL || 'https://api.coingecko.com/api/v3/simple/price'
+
 interface CryptoPrices {
   btc: number
   eth: number
@@ -7,7 +9,7 @@ export const cryptoPriceService = {
   async getPrices(): Promise<CryptoPrices> {
     try {
       const res = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd',
+        `${COINGECKO_API_URL}?ids=bitcoin,ethereum&vs_currencies=usd`,
         { next: { revalidate: 3600 } }
       )
       if (!res.ok) throw new Error('CoinGecko API failed')

@@ -1,7 +1,9 @@
+const DOLAR_API_URL = process.env.DOLAR_API_URL || 'https://dolarapi.com/v1/dolares/blue'
+
 export const exchangeRateService = {
   async getRate() {
     try {
-      const res = await fetch('https://dolarapi.com/v1/dolares/blue', {
+      const res = await fetch(DOLAR_API_URL, {
         next: { revalidate: 3600 } // Cache por 1 hora
       });
       if (!res.ok) throw new Error('API failed');
