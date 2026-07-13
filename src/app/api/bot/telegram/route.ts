@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { TelegramClient } from '@/services/telegramClient'
 import { BotProcessor } from '@/services/botProcessor'
-import { checkRateLimit, getClientIp } from '@/lib/security'
+import { getClientIp } from '@/lib/security'
+import { telegramLimiter } from '@/lib/rateLimit'
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET!
-const BOT_USER_ID = process.env.BOT_USER_ID!
 
 async function resolveUserId(telegramUserId: number): Promise<string | null> {
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
 
   // Rate limiting: 60 requests per minute per IP
   const ip = getClientIp(req)
-  const rate = checkRateLimit(`telegram:${ip}`, 60, 60_000)
-  if (!rate.allowed) {
+  const { success } = await telegramLimiter.limit(ip)
+  if (!success) {
     return new NextResponse('Too Many Requests', { status: 429 })
   }
 
@@ -61,17 +61,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const effectiveUserId = supabaseUserId || BOT_USER_ID
+  // At this point supabaseUserId is guaranteed for normal messages (non-/vincular,/desvincular).
+  // For /vincular and /desvincular supabaseUserId may be null, but handleCommand for those
+  // does NOT use this.userId for queries — it resolves the target user from the link token.
+  const processorUserId = supabaseUserId || '00000000-0000-0000-0000-000000000000'
 
   // Handle callback queries
   if (callbackQuery) {
+    if (!supabaseUserId) {
+      return NextResponse.json({ ok: true })
+    }
     try {
       const messageId = callbackQuery.message?.message_id
       const data = callbackQuery.data
       if (!messageId || !data) { await telegram.answerCallbackQuery(callbackQuery.id); return NextResponse.json({ ok: true }) }
 
       await telegram.answerCallbackQuery(callbackQuery.id)
-      const result = await new BotProcessor(effectiveUserId).handleCallback(data)
+      const result = await new BotProcessor(supabaseUserId).handleCallback(data)
 
       if (result.keyboard && result.keyboard.length > 0) {
         await telegram.editMessageText(chatId, messageId, result.text, result.keyboard)
@@ -89,7 +95,7 @@ export async function POST(req: NextRequest) {
   if (!message) return NextResponse.json({ ok: true })
 
   try {
-    const processor = new BotProcessor(effectiveUserId)
+    const processor = new BotProcessor(processorUserId)
     let result: { text: string; keyboard?: { text: string; callback_data: string }[][] }
 
     if (text) {

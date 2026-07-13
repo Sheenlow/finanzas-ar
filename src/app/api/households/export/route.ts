@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getClientIp } from '@/lib/security';
+import { generalLimiter } from '@/lib/rateLimit';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const ip = getClientIp(req)
+  const { success } = await generalLimiter.limit(ip)
+  if (!success) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+  }
+
   try {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();

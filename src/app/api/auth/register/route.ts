@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import zxcvbn from 'zxcvbn';
-import { checkRateLimit, getClientIp, requireOrigin } from '@/lib/security';
+import { getClientIp, requireOrigin } from '@/lib/security';
+import { registerLimiter } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   // CSRF / Origin validation
@@ -11,8 +12,8 @@ export async function POST(req: Request) {
 
   // Rate limiting: 5 registros por minuto por IP
   const ip = getClientIp(req);
-  const rate = checkRateLimit(`register:${ip}`, 5, 60_000);
-  if (!rate.allowed) {
+  const { success, remaining } = await registerLimiter.limit(ip);
+  if (!success) {
     return NextResponse.json({ error: 'Demasiados intentos. Intenta de nuevo en un minuto.' }, { status: 429 });
   }
 

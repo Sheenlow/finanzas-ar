@@ -1,7 +1,7 @@
 import OpenAI from 'openai'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { householdSplitService } from './householdSplitService'
-import { getBillingMonthFromRules, getBillingMonthFromCycle } from '@/lib/utils'
+import { getBillingMonthFromRules, getBillingMonthFromCycle, escapeHtml } from '@/lib/utils'
 import type {
   Account, Category, KeywordRule, ParsedTransaction,
   TransactionRow, FlowState,
@@ -172,7 +172,7 @@ Usuario: @FinanzasArBot`
           .eq('id', cfg.user_id)
           .maybeSingle()
 
-        const name = profile?.full_name?.split(' ')[0] || ''
+        const name = escapeHtml(profile?.full_name?.split(' ')[0] || '')
         const greeting = name ? `¡Vinculado correctamente, ${name}!` : '¡Cuenta vinculada correctamente!'
 
         return `✅ ${greeting}\n\nYa podés registrar gastos en tu cuenta de FinanzasAR.\nProbá: /help para ver cómo usarme.`
@@ -202,10 +202,10 @@ Usuario: @FinanzasArBot`
         const rest = text.slice('/config'.length).trim()
         if (rest) {
           await this.supabase.from('bot_config').upsert({ user_id: this.userId, custom_prompt: rest, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-          return '✅ Prompt personalizado actualizado:\n\n<i>' + rest + '</i>'
+          return '✅ Prompt personalizado actualizado:\n\n<i>' + escapeHtml(rest) + '</i>'
         }
         const prompt = await this.getCustomPrompt()
-        return prompt ? '📝 <b>Prompt personalizado actual:</b>\n\n' + prompt + '\n\nPara cambiarlo, mandá /config seguido del nuevo texto.'
+        return prompt ? '📝 <b>Prompt personalizado actual:</b>\n\n' + escapeHtml(prompt) + '\n\nPara cambiarlo, mandá /config seguido del nuevo texto.'
           : '📝 No tenés un prompt personalizado.\n\nMandá /config seguido de tus instrucciones. Ejemplo:\n/config Mis cuentas son Galicia, MP y Efectivo.'
       }
       default: return ''
@@ -230,7 +230,7 @@ Usuario: @FinanzasArBot`
     const lines = data.map((t: any, i: number) => {
       const inst = t.is_installment ? ` (${t.installment_number}/${t.installments_total})` : ''
       const icon = t.type === 'income' ? '💰' : t.type === 'subscription' ? '🔁' : t.type === 'service' ? '⚡' : '💸'
-      return `${i + 1}. ${icon} ${t.description}: ${formatAmount(t.amount, t.currency)}${inst}`
+      return `${i + 1}. ${icon} ${escapeHtml(t.description)}: ${formatAmount(t.amount, t.currency)}${inst}`
     })
     return `<b>📋 Últimos movimientos</b>\n\n${lines.join('\n')}`
   }
@@ -238,7 +238,7 @@ Usuario: @FinanzasArBot`
   private async getBalancesMessage(): Promise<string> {
     const { data } = await this.supabase.from('accounts').select('name, balance, currency').eq('user_id', this.userId).order('name')
     if (!data || data.length === 0) return '💰 No tenés cuentas registradas.'
-    return `<b>💰 Saldos</b>\n\n${data.map((a: any) => `• ${a.name}: ${formatAmount(a.balance, a.currency)}`).join('\n')}`
+    return `<b>💰 Saldos</b>\n\n${data.map((a: any) => `• ${escapeHtml(a.name)}: ${formatAmount(a.balance, a.currency)}`).join('\n')}`
   }
 
   // ──── Transaction CRUD ──────────────────────────────
@@ -345,7 +345,7 @@ Usuario: @FinanzasArBot`
 
   private formatConfirmation(parsed: ParsedTransaction, transactionId: string): string {
     const parts: string[] = []
-    parts.push(`✅ <b>${parsed.description}</b>`)
+    parts.push(`✅ <b>${escapeHtml(parsed.description)}</b>`)
 
     if (parsed.installments > 0) {
       const perCuota = Math.round((parsed.amount / parsed.installments) * 100) / 100
@@ -354,8 +354,8 @@ Usuario: @FinanzasArBot`
       parts.push(`${formatAmount(parsed.amount, parsed.currency)} ${parsed.currency}`)
     }
 
-    if (parsed.accountName) parts.push(`[${parsed.accountName}]`)
-    if (parsed.categoryName) parts.push(`#${parsed.categoryName}`)
+    if (parsed.accountName) parts.push(`[${escapeHtml(parsed.accountName)}]`)
+    if (parsed.categoryName) parts.push(`#${escapeHtml(parsed.categoryName)}`)
     if (parsed.subscriptionFrequency) {
       const freqLabel: Record<string, string> = { monthly: 'Mensual', quarterly: 'Trimestral', biannual: 'Semestral', annual: 'Anual' }
       parts.push(`🔁 ${freqLabel[parsed.subscriptionFrequency] || parsed.subscriptionFrequency}`)
@@ -398,11 +398,11 @@ Usuario: @FinanzasArBot`
       const categoryName = decodeURIComponent(rest)
       const cats = await this.getCategories()
       const cat = cats.find(c => c.name.toLowerCase() === categoryName.toLowerCase())
-      if (!cat) return { text: `❓ Categoría "${categoryName}" no encontrada.`, keyboard: this.confirmationKeyboard(transactionId) }
+      if (!cat) return { text: `❓ Categoría "${escapeHtml(categoryName)}" no encontrada.`, keyboard: this.confirmationKeyboard(transactionId) }
       await this.updateTransactionField(transactionId, 'category_id', cat.id)
       const txn = await this.getTransaction(transactionId)
       if (txn) for (const w of extractKeywords(txn.description || '')) await this.saveKeywordRule(w, 'category_name', categoryName)
-      return { text: `✅ Categoría actualizada → ${categoryName}`, keyboard: this.confirmationKeyboard(transactionId) }
+      return { text: `✅ Categoría actualizada → ${escapeHtml(categoryName)}`, keyboard: this.confirmationKeyboard(transactionId) }
     }
 
     if (action === 'setacct') {
@@ -411,7 +411,7 @@ Usuario: @FinanzasArBot`
       const accs = await this.getAccounts(); const acc = accs.find(a => a.id === accountId)
       const txn = await this.getTransaction(transactionId)
       if (txn && acc) for (const w of extractKeywords(txn.description || '')) await this.saveKeywordRule(w, 'account_name', acc.name)
-      return { text: `✅ Cuenta actualizada → ${acc?.name || accountId}`, keyboard: this.confirmationKeyboard(transactionId) }
+      return { text: `✅ Cuenta actualizada → ${escapeHtml(acc?.name || accountId)}`, keyboard: this.confirmationKeyboard(transactionId) }
     }
 
     if (action === 'cancel') return { text: 'Operación cancelada.', keyboard: this.confirmationKeyboard(transactionId) }
@@ -523,14 +523,14 @@ Usuario: @FinanzasArBot`
     switch (state) {
       case 'ask_cuotas':
         return {
-          text: `💳 Detecté pago con tarjeta. ¿Es en cuotas?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          text: `💳 Detecté pago con tarjeta. ¿Es en cuotas?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`,
           keyboard: [[{ text: 'Sí, en cuotas', callback_data: 'new:cuotas:si' }, { text: 'No, pago único', callback_data: 'new:cuotas:no' }],
           [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
         }
 
       case 'ask_cuotas_count':
         return {
-          text: `¿Cuántas cuotas?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          text: `¿Cuántas cuotas?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`,
           keyboard: [
             [{ text: '3', callback_data: 'new:cuotas_n:3' }, { text: '6', callback_data: 'new:cuotas_n:6' }],
             [{ text: '9', callback_data: 'new:cuotas_n:9' }, { text: '12', callback_data: 'new:cuotas_n:12' }],
@@ -543,19 +543,19 @@ Usuario: @FinanzasArBot`
         const accounts = await this.getAccounts()
         const buttons = accounts.map(a => ([{ text: `${a.name} (${a.currency})`, callback_data: `new:acct:${a.id}` }]))
         buttons.push([{ text: 'Cancelar', callback_data: 'new:cancel' }])
-        return { text: `🏦 ¿En qué cuenta?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`, keyboard: buttons }
+        return { text: `🏦 ¿En qué cuenta?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`, keyboard: buttons }
       }
 
       case 'ask_subscription':
         return {
-          text: `🔁 ¿Es un gasto recurrente (suscripción)?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          text: `🔁 ¿Es un gasto recurrente (suscripción)?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`,
           keyboard: [[{ text: 'Sí, recurrente', callback_data: 'new:subscription:si' }, { text: 'No, único', callback_data: 'new:subscription:no' }],
           [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
         }
 
       case 'ask_frequency':
         return {
-          text: `¿Cada cuánto se repite?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          text: `¿Cada cuánto se repite?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`,
           keyboard: [
             [{ text: 'Mensual', callback_data: 'new:frequency:monthly' }, { text: 'Trimestral', callback_data: 'new:frequency:quarterly' }],
             [{ text: 'Semestral', callback_data: 'new:frequency:biannual' }, { text: 'Anual', callback_data: 'new:frequency:annual' }],
@@ -565,14 +565,14 @@ Usuario: @FinanzasArBot`
 
       case 'ask_household_show':
         return {
-          text: `🏠 ¿Mostrar en el hogar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          text: `🏠 ¿Mostrar en el hogar?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`,
           keyboard: [[{ text: 'Sí, mostrar', callback_data: 'new:household_show:si' }, { text: 'No', callback_data: 'new:household_show:no' }],
           [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
         }
 
       case 'ask_household_share':
         return {
-          text: `🤝 ¿Compartir el gasto con el hogar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`,
+          text: `🤝 ¿Compartir el gasto con el hogar?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`,
           keyboard: [[{ text: 'Sí, compartir', callback_data: 'new:household_share:si' }, { text: 'No, solo mostrar', callback_data: 'new:household_share:no' }],
           [{ text: 'Cancelar', callback_data: 'new:cancel' }]],
         }
@@ -584,19 +584,19 @@ Usuario: @FinanzasArBot`
           buttons.push(categories.slice(i, i + 2).map(c => ({ text: c.name, callback_data: `new:cat:${encodeURIComponent(c.name)}` })))
         }
         buttons.push([{ text: 'Cancelar', callback_data: 'new:cancel' }])
-        return { text: `🏷️ ¿Categoría?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}`, keyboard: buttons }
+        return { text: `🏷️ ¿Categoría?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}`, keyboard: buttons }
       }
 
       case 'confirm': {
         const perCuota = pending.installments > 0 ? Math.round((pending.amount / pending.installments) * 100) / 100 : pending.amount
-        const lines: string[] = [`<b>${pending.description}</b>`]
+        const lines: string[] = [`<b>${escapeHtml(pending.description)}</b>`]
         if (pending.installments > 0) {
           lines.push(`${formatAmount(perCuota, pending.currency)} c/u × ${pending.installments} cuotas (${formatAmount(pending.amount, pending.currency)} total)`)
         } else {
           lines.push(`${formatAmount(pending.amount, pending.currency)} ${pending.currency}`)
         }
-        if (pending.accountName) lines.push(`Cuenta: ${pending.accountName}`)
-        if (pending.categoryName) lines.push(`Categoría: ${pending.categoryName}`)
+        if (pending.accountName) lines.push(`Cuenta: ${escapeHtml(pending.accountName)}`)
+        if (pending.categoryName) lines.push(`Categoría: ${escapeHtml(pending.categoryName)}`)
         if (pending.paymentMethod === 'card') lines.push('Pago: Tarjeta')
         else if (pending.paymentMethod === 'transfer') lines.push('Pago: Transferencia')
         else lines.push('Pago: Efectivo')
@@ -615,9 +615,9 @@ Usuario: @FinanzasArBot`
 
       case 'edit': {
         const lines: string[] = []
-        if (pending.categoryName) lines.push(`🏷️ <b>Categoría:</b> ${pending.categoryName}`)
+        if (pending.categoryName) lines.push(`🏷️ <b>Categoría:</b> ${escapeHtml(pending.categoryName)}`)
         else lines.push(`🏷️ <b>Categoría:</b> sin asignar`)
-        if (pending.accountName) lines.push(`🏦 <b>Cuenta:</b> ${pending.accountName}`)
+        if (pending.accountName) lines.push(`🏦 <b>Cuenta:</b> ${escapeHtml(pending.accountName)}`)
         else lines.push(`🏦 <b>Cuenta:</b> sin asignar`)
         if (pending.installments > 0) lines.push(`💳 <b>Cuotas:</b> ${pending.installments}`)
         else lines.push(`💳 <b>Cuotas:</b> pago único`)
@@ -631,7 +631,7 @@ Usuario: @FinanzasArBot`
           lines.push(pending.isSharing ? '🏠 <b>Hogar:</b> Compartido' : '🏠 <b>Hogar:</b> Visible')
         }
         return {
-          text: `¿Qué querés editar?\n\n<b>${pending.description}</b> — ${formatAmount(pending.amount, pending.currency)}\n\n${lines.join('\n')}`,
+          text: `¿Qué querés editar?\n\n<b>${escapeHtml(pending.description)}</b> — ${formatAmount(pending.amount, pending.currency)}\n\n${lines.join('\n')}`,
           keyboard: [
             [{ text: '🏷️ Categoría', callback_data: 'new:edit:cat' }, { text: '🏦 Cuenta', callback_data: 'new:edit:acct' }],
             [{ text: '💳 Cuotas', callback_data: 'new:edit:cuotas' }],

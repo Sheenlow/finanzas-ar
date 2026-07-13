@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { requireOrigin } from '@/lib/security';
+import { requireOrigin, getClientIp } from '@/lib/security';
+import { generalLimiter } from '@/lib/rateLimit';
 
 export async function PATCH(req: Request) {
   if (!requireOrigin(req)) {
     return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 });
+  }
+
+  const ip = getClientIp(req)
+  const { success } = await generalLimiter.limit(ip)
+  if (!success) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
   }
 
   try {

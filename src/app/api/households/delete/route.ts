@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { requireOrigin, checkRateLimit, getClientIp } from '@/lib/security';
+import { requireOrigin, getClientIp } from '@/lib/security';
+import { generalLimiter } from '@/lib/rateLimit';
 
 export async function DELETE(req: Request) {
   if (!requireOrigin(req)) {
@@ -9,9 +10,9 @@ export async function DELETE(req: Request) {
   }
 
   const ip = getClientIp(req)
-  const rate = checkRateLimit('household-delete:' + ip, 3, 60_000)
-  if (!rate.allowed) {
-    return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta de nuevo en un minuto.' }, { status: 429 })
+  const { success } = await generalLimiter.limit(ip)
+  if (!success) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
   }
 
   try {

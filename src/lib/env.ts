@@ -10,13 +10,14 @@ const envSchema = z.object({
   CRON_SECRET: z.string().min(1),
   RECAPTCHA_SECRET_KEY: z.string().min(1),
   NEXT_PUBLIC_RECAPTCHA_SITE_KEY: z.string().min(1),
-  BOT_USER_ID: z.string().uuid(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_URL: z.string().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 })
 
 export const env = envSchema.parse(process.env)
