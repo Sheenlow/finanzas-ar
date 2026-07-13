@@ -68,21 +68,20 @@ export function AnimatedCard({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{
-        type: "spring",
-        stiffness: 200,
-        damping: 20,
+        type: "tween",
+        duration: 0.3,
+        ease: "easeOut",
         delay: delay,
       }}
-      whileHover={{ y: -6, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      style={{ willChange: 'transform' }}
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-300",
+        "group relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]",
         styles.borderHover,
         className
       )}
       {...props}
     >
-      <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50 transition-opacity duration-300", styles.bgGradient)} />
+      <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", styles.bgGradient)} />
 
       <AnimatePresence mode="wait">
         {loading ? (

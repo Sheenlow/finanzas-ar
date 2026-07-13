@@ -7,19 +7,8 @@ import { savingsGoalsService } from '@/services/savingsGoalsService';
 import { exchangeRateService } from '@/services/exchangeRateService';
 import { cryptoPriceService } from '@/services/cryptoPriceService';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { getEffectiveMonth } from '@/lib/utils';
-import { AnimatedCard } from '@/components/AnimatedCard';
-import { MonthSelector } from '@/components/MonthSelector';
-import { FixedExpensesReport } from '@/components/dashboard/FixedExpensesReport';
-import { MonthlyFixedExpensesReport } from '@/components/dashboard/MonthlyFixedExpensesReport';
-import { MonthlyTransactions } from '@/components/dashboard/MonthlyTransactions';
-import { ConsolidatedBalance } from '@/components/dashboard/ConsolidatedBalance';
-import { DashboardGoals } from '@/components/dashboard/DashboardGoals';
-import { DashboardHouseholdSummary } from '@/components/dashboard/DashboardHouseholdSummary';
-import { TrendsChart } from '@/components/dashboard/TrendsChart';
-import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardClient } from '@/components/dashboard/DashboardClient';
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const supabase = await createClient();
@@ -101,18 +90,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const botLink = (botLinkResult as any)?.data
 
-  const now = new Date();
-  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const todayStr = now.toISOString().slice(0, 10);
-
-  const filteredTransactions = transactions.filter((t: any) => {
-    const effectiveMonth = getEffectiveMonth(t);
-    const isCurrentMonth = effectiveMonth === selectedMonth;
-    const isChild = t.parent_transaction_id && t.id !== t.parent_transaction_id;
-    const isNotFuture = selectedMonth !== currentMonthKey || t.transaction_date.slice(0, 10) <= todayStr;
-    return isCurrentMonth && !isChild && isNotFuture;
-  });
-
   let householdMembers: any[] = [];
   let householdTransactions: any[] = [];
   let sharedTransactionIds: string[] = [];
@@ -149,16 +126,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     }
 
     householdMembers = members || [];
-
-    householdTransactions = hhTransactions.filter((t: any) => {
-      const effectiveMonth = getEffectiveMonth(t);
-      return effectiveMonth === selectedMonth;
-    });
-
+    householdTransactions = hhTransactions;
     sharedTransactionIds = Array.from(new Set((sharedRecs || []).map((r: any) => r.transaction_id)));
-
     householdGoals = hhGoals;
   }
+
+  const now = new Date();
 
   const hhShare = mySplitPercentage / 100;
 
@@ -184,129 +157,30 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     ...values,
   }))
 
-  const expenseByCategory = new Map<string, number>()
-  filteredTransactions.forEach((t: any) => {
-    if (t.type === 'expense' && t.category_id && categoryMap.has(t.category_id)) {
-      const current = expenseByCategory.get(t.category_id) || 0
-      expenseByCategory.set(t.category_id, current + (t.household_id ? t.amount * hhShare : t.amount))
-    }
-  })
-  const totalExpenses = Array.from(expenseByCategory.values()).reduce((s, v) => s + v, 0)
-  const pieData = Array.from(expenseByCategory.entries())
-    .map(([catId, value]) => {
-      const cat = categoryMap.get(catId)
-      return {
-        name: cat?.name || 'Sin categoría',
-        value,
-        color: cat?.color || '#94a3b8',
-        percentage: totalExpenses > 0 ? ((value / totalExpenses) * 100).toFixed(1) : '0',
-      }
-    })
-    .sort((a, b) => b.value - a.value)
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-      <DashboardLayout>
-        <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
-            <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-muted-foreground text-sm mt-1">Bienvenido{greetingName ? ` ${greetingName.split(' ')[0]}` : ''} de nuevo a tu gestión financiera.</p>
-            </div>
-            <MonthSelector />
-        </header>
-
-        {botLink ? (
-          <section className="bg-card border border-border border-l-4 border-l-emerald-500 rounded-2xl p-5 mb-6 shadow-sm">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🤖</span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">Bot de Telegram vinculado</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Telegram ID: {botLink.telegram_user_id}</p>
-                <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
-                  @FinanzasArBot · t.me/FinanzasArBot
-                </a>
-              </div>
-            </div>
-          </section>
-        ) : botConfig?.link_token ? (
-          <section className="bg-card border border-border border-l-4 border-l-indigo-500 rounded-2xl p-5 mb-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-              <span className="text-2xl">🤖</span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">Vinculá tu bot de Telegram</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Enviá este código al bot para vincular tu cuenta</p>
-                <code className="mt-1.5 inline-block text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-mono select-all">{botConfig.link_token}</code>
-                <div className="mt-2">
-                  <span className="text-xs text-muted-foreground">/vincular {botConfig.link_token.toString().slice(0, 8)}...</span>
-                </div>
-                <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
-                  @FinanzasArBot · t.me/FinanzasArBot
-                </a>
-              </div>
-            </div>
-          </section>
-        ) : (
-          <section className="bg-card border border-border border-l-4 border-l-amber-500 rounded-2xl p-5 mb-6 shadow-sm">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🤖</span>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Bot de Telegram</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Usá el comando /config para empezar.</p>
-                <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
-                  @FinanzasArBot · t.me/FinanzasArBot
-                </a>
-              </div>
-            </div>
-          </section>
-        )}
-
-        <Suspense fallback={<div className="p-6 bg-card border border-border/50 rounded-3xl animate-pulse h-32" />}>
-          <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />
-        </Suspense>
-
-        <section className="my-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {accounts.map((account, index) => (
-                <AnimatedCard
-                  key={account.id}
-                  title={account.name}
-                  amount={account.balance}
-                  currency={account.currency as "ARS" | "USD"}
-                  type={account.type as "bank" | "cash" | "crypto"}
-                  delay={index * 0.1}
-                />
-              ))}
-            </div>
-        </section>
-
-        <MonthlyTransactions transactions={filteredTransactions} categories={categories || []} />
-
-        <CategoryPieChart data={pieData} />
-
-        {householdTransactions.length > 0 && (
-          <DashboardHouseholdSummary
-            transactions={householdTransactions}
-            members={householdMembers}
-            mySplitPercentage={mySplitPercentage}
-            userId={user.id}
-            sharedTransactionIds={sharedTransactionIds}
-          />
-        )}
-
-        <DashboardGoals goals={goals} householdGoals={householdGoals} />
-
-        <TrendsChart data={trendData} />
-
-        <FixedExpensesReport data={reportData.items} monthlyData={reportData.monthlyData} />
-
-        <MonthlyFixedExpensesReport
-          transactions={transactions}
-          selectedMonth={selectedMonth}
-          exchangeRate={exchangeRate}
-          cryptoPrices={cryptoPrices}
-        />
-        
-      </DashboardLayout>
+      <DashboardClient
+        greetingName={greetingName}
+        accounts={accounts}
+        transactions={transactions}
+        goals={goals}
+        categories={categories}
+        exchangeRate={exchangeRate}
+        cryptoPrices={cryptoPrices}
+        totalArs={totalArs}
+        totalUsd={totalUsd}
+        reportData={reportData}
+        trendData={trendData}
+        botConfig={botConfig}
+        botLink={botLink}
+        householdMembers={householdMembers}
+        householdTransactions={householdTransactions}
+        sharedTransactionIds={sharedTransactionIds}
+        householdGoals={householdGoals}
+        mySplitPercentage={mySplitPercentage}
+        userId={user.id}
+        initialMonth={selectedMonth}
+      />
     </div>
   );
 }
