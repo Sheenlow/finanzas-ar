@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database.types';
-import { accountsService } from './accountsService';
+import { resolveBillingMonth } from './transactionsService';
 
 type Transaction = Database['public']['Tables']['transactions']['Row'];
 type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
@@ -17,17 +17,32 @@ export const subscriptionService = {
 
     if (error) throw error;
 
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01T00:00:00Z`;
+    const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+    const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+    const endOfMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00Z`;
+
     for (const item of (recurringItems || []) as Transaction[]) {
-      const currentMonthPrefix = new Date().toISOString().slice(0, 7);
       const { data: existing, error: checkError } = await supabase
         .from('transactions')
         .select('id')
         .eq('parent_transaction_id', item.id)
-        .gte('transaction_date', currentMonthPrefix + '-01')
+        .gte('transaction_date', startOfMonth)
+        .lt('transaction_date', endOfMonth)
         .maybeSingle();
 
       if (checkError) throw checkError;
       if (existing) continue;
+
+      const billingMonth = await resolveBillingMonth(
+        supabase,
+        item.payment_method,
+        item.account_id,
+        now
+      );
 
       await supabase
         .from('transactions')
@@ -38,10 +53,11 @@ export const subscriptionService = {
           currency: item.currency,
           type: item.type,
           description: item.description,
-          transaction_date: new Date().toISOString(),
+          transaction_date: now.toISOString(),
           payment_method: item.payment_method,
           parent_transaction_id: item.id,
           subscription_frequency: item.subscription_frequency,
+          billing_month: billingMonth,
         }]);
     }
   },

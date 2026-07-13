@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { resolveBillingMonth } from '@/services/transactionsService';
 
 export async function GET(req: Request) {
   // 1. Verificación de seguridad
@@ -29,6 +30,10 @@ export async function GET(req: Request) {
   const today = new Date();
   const currentMonth = today.getMonth() + 1;
   const currentYear = today.getFullYear();
+  const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01T00:00:00Z`;
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+  const endOfMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00Z`;
 
   const generated = [];
 
@@ -38,9 +43,17 @@ export async function GET(req: Request) {
       .from('transactions')
       .select('id')
       .eq('parent_transaction_id', sub.id)
-      .eq('transaction_date', `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`); // Ajustar lógica de fecha si es necesario
+      .gte('transaction_date', startOfMonth)
+      .lt('transaction_date', endOfMonth);
 
     if (!existing || existing.length === 0) {
+      const billingMonth = await resolveBillingMonth(
+        supabase,
+        sub.payment_method,
+        sub.account_id,
+        today
+      );
+
       // Crear nueva transacción
       const { data, error: insertError } = await supabase
         .from('transactions')
@@ -51,10 +64,11 @@ export async function GET(req: Request) {
           currency: sub.currency,
           type: 'subscription',
           description: sub.description,
-          transaction_date: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01T00:00:00Z`,
+          transaction_date: today.toISOString(),
           payment_method: sub.payment_method,
           parent_transaction_id: sub.id,
-          subscription_frequency: sub.subscription_frequency
+          subscription_frequency: sub.subscription_frequency,
+          billing_month: billingMonth,
         }]);
       
       if (!insertError) generated.push(sub.id);

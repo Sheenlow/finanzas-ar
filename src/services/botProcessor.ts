@@ -524,7 +524,8 @@ Usuario: @FinanzasArBot`
     if (parsed.accountId) {
       const { data: account } = await this.supabase.from('accounts').select('balance').eq('id', parsed.accountId).single()
       if (account) {
-        await this.supabase.from('accounts').update({ balance: account.balance - installmentAmount }).eq('id', parsed.accountId)
+        const balanceChange = parsed.type === 'income' ? installmentAmount : -installmentAmount
+        await this.supabase.from('accounts').update({ balance: account.balance + balanceChange }).eq('id', parsed.accountId)
       }
     }
 

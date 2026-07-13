@@ -56,9 +56,7 @@ export function TransactionItem({ transaction, userId }: { transaction: any, use
         <div className="text-right">
             <p className={cn("font-semibold text-sm", isIncome ? "text-emerald-700" : "text-foreground")}>
                 {isIncome ? '+' : '-'}{' '}
-                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: transaction.currency }).format(
-                transaction.is_installment ? transaction.amount * transaction.installments_total : transaction.amount
-                )}
+                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: transaction.currency }).format(transaction.amount)}
             </p>
             <span className="text-[10px] uppercase font-medium tracking-tight text-muted-foreground">
                 {transaction.is_installment 

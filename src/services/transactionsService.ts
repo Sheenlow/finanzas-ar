@@ -13,7 +13,7 @@ function addMonths(date: Date, months: number): Date {
   return result;
 }
 
-async function resolveBillingMonth(
+export async function resolveBillingMonth(
   supabase: SupabaseClient,
   paymentMethod: string | undefined,
   accountId: string | undefined,
