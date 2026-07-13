@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Home, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useUser } from '@/components/UserProvider'
+import { Alert } from '@/components/ui/Alert'
 
 function splitFullName(name: string) {
   const parts = name.trim().split(/\s+/)
@@ -201,9 +202,9 @@ export function UserMenu() {
               </div>
 
               {saveMessage && (
-                <p className={`text-sm ${saveMessage.startsWith('Error') ? 'text-red-600' : 'text-emerald-600'}`}>
+                <Alert variant={saveMessage.startsWith('Error') ? 'error' : 'success'}>
                   {saveMessage}
-                </p>
+                </Alert>
               )}
 
               <div className="flex gap-2">

@@ -15,6 +15,7 @@ import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useHouseholdIncomes } from '@/hooks/useHouseholdIncomes'
 import { useInviteLink } from '@/hooks/useInviteLink'
 import { useSettlements } from '@/hooks/useSettlements'
+import { Alert } from '@/components/ui/Alert'
 
 interface Household {
   id: string
@@ -195,7 +196,7 @@ export function HouseholdManager({
               {invite.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Invitar'}
             </button>
           </div>
-          {displayError && <p className="text-xs text-rose-600 mt-2">{displayError}</p>}
+          {displayError && <Alert variant="error" className="mt-2">{displayError}</Alert>}
           {invite.inviteLink && (
             <div className="mt-3 flex items-center gap-2 bg-secondary/50 p-3 rounded-xl">
               <code className="flex-1 text-xs break-all">{invite.inviteLink}</code>
@@ -219,9 +220,11 @@ export function HouseholdManager({
       </div>
 
       {isAdmin && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-          <p className="text-sm font-medium text-red-700 mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" />Zona de peligro</p>
-          <button onClick={() => setShowDeleteModal(true)} className="w-full px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-4">
+          <p className="text-sm font-medium text-rose-700 dark:text-rose-400 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />Zona de peligro
+          </p>
+          <button onClick={() => setShowDeleteModal(true)} className="w-full px-4 py-2 bg-rose-600 text-white rounded-xl font-medium hover:bg-rose-700 transition-colors flex items-center justify-center gap-2">
             <Trash2 className="w-4 h-4" />Eliminar hogar
           </button>
         </div>

@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { AlertTriangle } from 'lucide-react'
 
 export default function DashboardError({
   error,
@@ -15,9 +17,14 @@ export default function DashboardError({
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="bg-card border border-border rounded-2xl p-8 shadow-sm text-center space-y-4">
-        <div className="mx-auto w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
-          <span className="text-2xl">!</span>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-card border border-border rounded-2xl p-8 shadow-sm text-center space-y-4"
+      >
+        <div className="mx-auto w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/30 flex items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-rose-600 dark:text-rose-400" />
         </div>
         <h2 className="text-lg font-semibold">Error al cargar la página</h2>
         <p className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -29,7 +36,7 @@ export default function DashboardError({
         >
           Reintentar
         </button>
-      </div>
+      </motion.div>
     </div>
   )
 }

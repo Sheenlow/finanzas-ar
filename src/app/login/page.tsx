@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react'
 import { authService } from '@/services/authService.client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Alert } from '@/components/ui/Alert'
 
 function LoginContent() {
   const [email, setEmail] = useState('')
@@ -65,7 +66,7 @@ function LoginContent() {
             className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
             required
           />
-          {error && <p className="text-xs text-rose-600 font-medium">{error}</p>}
+          {error && <Alert variant="error">{error}</Alert>}
           <button 
             type="submit" 
             disabled={loading}

@@ -8,6 +8,7 @@ import { Database } from '@/types/database.types'
 import { CustomSelect } from '../ui/CustomSelect'
 import { estimateNextClosing } from '@/lib/utils'
 import { X, Plus } from 'lucide-react'
+import { Alert } from '@/components/ui/Alert'
 
 type Account = Database['public']['Tables']['accounts']['Row']
 type BillingCycle = Database['public']['Tables']['billing_cycles']['Row']
@@ -214,9 +215,9 @@ export function AccountForm({ userId, initialAccount, onSuccess }: {
           </div>
 
           {closingRule === 'last_thursday' && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg">
+            <Alert variant="info">
               Próximo cierre estimado: <strong>{nextClosingEstimate}</strong>
-            </p>
+            </Alert>
           )}
 
           <input

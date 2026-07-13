@@ -1,6 +1,7 @@
 'use client'
 
 import { Home, Plus, Loader2 } from 'lucide-react'
+import { Alert } from '@/components/ui/Alert'
 
 interface Props {
   householdName: string
@@ -38,7 +39,7 @@ export function CreateHouseholdForm({ householdName, onNameChange, onCreate, loa
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
           </button>
         </div>
-        {error && <p className="text-xs text-rose-600">{error}</p>}
+        {error && <Alert variant="error">{error}</Alert>}
       </div>
     </div>
   )

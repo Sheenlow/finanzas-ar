@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { AnimatedCard } from '@/components/AnimatedCard'
 import { MonthlyTransactions } from '@/components/dashboard/MonthlyTransactions'
@@ -143,7 +144,11 @@ export function DashboardClient({
       </header>
 
       {botLink ? (
-        <section className="bg-card border border-border border-l-4 border-l-emerald-500 rounded-2xl p-5 mb-6 shadow-sm">
+        <motion.section
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-card border border-border border-l-4 border-l-emerald-500 rounded-2xl p-5 mb-6 shadow-sm">
           <div className="flex items-start gap-3">
             <span className="text-2xl">🤖</span>
             <div className="flex-1">
@@ -154,9 +159,13 @@ export function DashboardClient({
               </a>
             </div>
           </div>
-        </section>
+        </motion.section>
       ) : botConfig?.link_token ? (
-        <section className="bg-card border border-border border-l-4 border-l-indigo-500 rounded-2xl p-5 mb-6 shadow-sm">
+        <motion.section
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-card border border-border border-l-4 border-l-indigo-500 rounded-2xl p-5 mb-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-start gap-3">
             <span className="text-2xl">🤖</span>
             <div className="flex-1">
@@ -171,9 +180,13 @@ export function DashboardClient({
               </a>
             </div>
           </div>
-        </section>
+        </motion.section>
       ) : (
-        <section className="bg-card border border-border border-l-4 border-l-amber-500 rounded-2xl p-5 mb-6 shadow-sm">
+        <motion.section
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-card border border-border border-l-4 border-l-amber-500 rounded-2xl p-5 mb-6 shadow-sm">
           <div className="flex items-start gap-3">
             <span className="text-2xl">🤖</span>
             <div>
@@ -184,7 +197,7 @@ export function DashboardClient({
               </a>
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
 
       <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />

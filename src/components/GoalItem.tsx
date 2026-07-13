@@ -8,8 +8,9 @@ import { savingsGoalsService } from '@/services/savingsGoalsService'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 import { GoalForm } from './forms/GoalForm'
-import { Target, Plus, Home } from 'lucide-react'
+import { Target, Plus, Home, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
 type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
 
@@ -26,6 +27,7 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [depositAmount, setDepositAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
@@ -73,13 +75,11 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
   }
 
   const handleDelete = async () => {
-    if (confirm('¿Estás seguro de que deseas borrar esta meta de ahorro?')) {
-      try {
-        await savingsGoalsService.delete(supabase, goal.id)
-        onUpdate()
-      } catch (error) {
-        console.error('Error deleting goal:', error)
-      }
+    try {
+      await savingsGoalsService.delete(supabase, goal.id)
+      onUpdate()
+    } catch (error) {
+      console.error('Error deleting goal:', error)
     }
   }
 
@@ -126,7 +126,7 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
         {isOwner && (
           <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button onClick={() => setIsEditing(true)} className="p-2 text-xs hover:bg-secondary rounded-lg font-medium">Editar</button>
-            <button onClick={handleDelete} className="p-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-medium">Borrar</button>
+            <button onClick={() => setShowDeleteConfirm(true)} className="p-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-medium">Borrar</button>
           </div>
         )}
       </div>
@@ -169,6 +169,16 @@ function GoalItemInner({ goal, userId, onUpdate, isHousehold, creatorName }: {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Eliminar meta"
+        description={`¿Estás seguro de que deseas borrar "${goal.name}"? Esta acción no se puede deshacer.`}
+        variant="danger"
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        onClose={() => setShowDeleteConfirm(false)}
+      />
     </motion.div>
   )
 }

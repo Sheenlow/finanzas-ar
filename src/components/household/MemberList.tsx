@@ -3,6 +3,7 @@
 import { DollarSign, Percent, RotateCcw, UserCog, UserMinus, Wand2 } from 'lucide-react'
 import { IncomeEditor } from './IncomeEditor'
 import { SplitEditor } from './SplitEditor'
+import { Alert } from '@/components/ui/Alert'
 
 interface Member {
   id: string
@@ -145,11 +146,9 @@ export function MemberList({
           })}
         </div>
         {totalIncome > 0 && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
-            <p className="text-xs text-green-700">
-              <span className="font-medium">Split automático activo</span> - Los gastos se dividen según ingresos.
-            </p>
-          </div>
+          <Alert variant="success" className="mt-4">
+            <span className="font-medium">Split automático activo</span> - Los gastos se dividen según ingresos.
+          </Alert>
         )}
       </div>
 
@@ -159,9 +158,9 @@ export function MemberList({
           Miembros y reparto
         </h3>
         {!splitValid && (
-          <p className="text-xs text-amber-600 mb-3 bg-amber-50 px-3 py-2 rounded-lg">
+          <Alert variant="warning" className="mb-3">
             Los porcentajes de reparto no suman 100% (actual: {totalSplit}%)
-          </p>
+          </Alert>
         )}
         <div className="space-y-3">
           {members.map(member => {
@@ -249,15 +248,15 @@ export function MemberList({
           </button>
         )}
         {totalIncome > 0 && isAdmin && membersWithoutIncome.length > 0 && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+          <Alert variant="warning" className="mt-4">
             <p className="font-medium mb-1">Faltan ingresos por declarar</p>
-            <p className="text-xs text-amber-700">
+            <p className="text-xs">
               {membersWithoutIncome.length === 1
                 ? 'Hay 1 miembro sin ingresos declarados.'
                 : `Hay ${membersWithoutIncome.length} miembros sin ingresos declarados.`}{' '}
               Todos los miembros deben declarar sus ingresos mensuales para usar el split automático.
             </p>
-          </div>
+          </Alert>
         )}
         {!isAdmin && (
           <button

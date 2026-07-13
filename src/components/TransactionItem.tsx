@@ -6,22 +6,22 @@ import { transactionsService } from '@/services/transactionsService'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { TransactionForm } from './forms/TransactionForm'
-import { ArrowRightLeft } from 'lucide-react'
+import { ArrowRightLeft, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
 function TransactionItem({ transaction, userId }: { transaction: any, userId: string }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
   const handleDelete = async () => {
-    if (confirm('¿Estás seguro de que deseas borrar esta transacción?')) {
-      try {
-        await transactionsService.delete(supabase, transaction.id)
-        router.refresh()
-      } catch (error) {
-        console.error('Error deleting transaction:', error)
-      }
+    try {
+      await transactionsService.delete(supabase, transaction.id)
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting transaction:', error)
     }
   }
 
@@ -42,6 +42,7 @@ function TransactionItem({ transaction, userId }: { transaction: any, userId: st
   const isIncome = transaction.type === 'income'
 
   return (
+    <>
     <div className="group p-4 bg-card border border-border/50 rounded-2xl flex items-center justify-between hover:border-border transition-all shadow-sm hover:shadow-md">
       <div className="flex items-center gap-4">
         <div className={cn("p-2 rounded-full", isIncome ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700")}>
@@ -72,10 +73,21 @@ function TransactionItem({ transaction, userId }: { transaction: any, userId: st
 
         <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button onClick={() => setIsEditing(true)} className="p-2 text-xs hover:bg-secondary rounded-lg">Editar</button>
-            <button onClick={handleDelete} className="p-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg">Borrar</button>
+            <button onClick={() => setShowDeleteConfirm(true)} className="p-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg">Borrar</button>
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      open={showDeleteConfirm}
+      title="Eliminar transacción"
+      description={`¿Estás seguro de que deseas borrar "${transaction.description}"? Esta acción no se puede deshacer.`}
+      variant="danger"
+      confirmLabel="Eliminar"
+      onConfirm={handleDelete}
+      onClose={() => setShowDeleteConfirm(false)}
+    />
+    </>
   )
 }
 

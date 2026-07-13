@@ -7,8 +7,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 import { AccountForm } from './forms/AccountForm'
-import { Wallet, CreditCard } from 'lucide-react'
+import { Wallet, CreditCard, Trash2 } from 'lucide-react'
 import { estimateNextClosing } from '@/lib/utils'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
 const TYPE_LABEL: Record<string, string> = {
   bank: 'Banco',
@@ -22,6 +23,7 @@ type CreditCardRow = Database['public']['Tables']['credit_cards']['Row']
 
 function AccountItem({ account, userId }: { account: Account, userId: string }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [cardData, setCardData] = useState<CreditCardRow | null>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -33,13 +35,11 @@ function AccountItem({ account, userId }: { account: Account, userId: string }) 
   }, [account.id, account.type])
 
   const handleDelete = async () => {
-    if (confirm('¿Estás seguro de que deseas borrar esta cuenta?')) {
-      try {
-        await accountsService.delete(supabase, account.id)
-        router.refresh()
-      } catch (error) {
-        console.error('Error deleting account:', error)
-      }
+    try {
+      await accountsService.delete(supabase, account.id)
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting account:', error)
     }
   }
 
@@ -56,6 +56,7 @@ function AccountItem({ account, userId }: { account: Account, userId: string }) 
   const Icon = account.type === 'credit_card' ? CreditCard : Wallet
 
   return (
+    <>
     <div className="group p-5 bg-card border border-border/50 rounded-2xl flex items-center justify-between hover:border-border transition-all shadow-sm hover:shadow-md">
       <div className="flex items-center gap-4">
         <div className="p-2 rounded-full bg-secondary text-primary">
@@ -90,10 +91,21 @@ function AccountItem({ account, userId }: { account: Account, userId: string }) 
 
         <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button onClick={() => setIsEditing(true)} className="p-2 text-xs hover:bg-secondary rounded-lg font-medium">Editar</button>
-            <button onClick={handleDelete} className="p-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-medium">Borrar</button>
+            <button onClick={() => setShowDeleteConfirm(true)} className="p-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-medium">Borrar</button>
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      open={showDeleteConfirm}
+      title="Eliminar cuenta"
+      description={`¿Estás seguro de que deseas borrar "${account.name}"? Esta acción no se puede deshacer.`}
+      variant="danger"
+      confirmLabel="Eliminar"
+      onConfirm={handleDelete}
+      onClose={() => setShowDeleteConfirm(false)}
+    />
+    </>
   )
 }
 

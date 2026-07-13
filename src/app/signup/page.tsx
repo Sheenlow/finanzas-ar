@@ -6,6 +6,7 @@ import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recapt
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Alert } from '@/components/ui/Alert'
 
 function SignUpForm() {
   const [email, setEmail] = useState('')
@@ -127,7 +128,7 @@ function SignUpForm() {
         <label>Acepto los términos y condiciones</label>
       </div>
 
-      {error && <p className="text-xs text-rose-600 font-medium">{error}</p>}
+      {error && <Alert variant="error">{error}</Alert>}
       <button 
         type="submit" 
         disabled={loading || !!(passwordStrength && passwordStrength.score < 3)} 

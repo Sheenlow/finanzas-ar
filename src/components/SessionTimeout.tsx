@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { authService } from '@/services/authService.client'
 import { useRouter } from 'next/navigation'
 import { LogOut, Clock } from 'lucide-react'
@@ -47,34 +48,50 @@ export function SessionTimeout() {
     }
   }, [resetTimer, handleLogout])
 
-  if (!showWarning) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="session-timeout-title">
-      <div className="bg-card border border-border rounded-2xl p-8 shadow-xl max-w-sm w-full mx-4 text-center space-y-4">
-        <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-          <Clock className="w-6 h-6 text-amber-600" />
-        </div>
-        <h2 id="session-timeout-title" className="text-lg font-semibold">Sesión por vencer</h2>
-        <p className="text-sm text-muted-foreground">
-          Llevás un tiempo sin actividad. Si no respondés, cerraremos tu sesión por seguridad.
-        </p>
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={handleStayLoggedIn}
-            className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity"
+    <AnimatePresence>
+      {showWarning && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="session-timeout-title"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="bg-card border border-border rounded-2xl p-8 shadow-xl max-w-sm w-full text-center space-y-4"
           >
-            Seguir conectado
-          </button>
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center gap-2 flex-1 border border-border py-2.5 rounded-xl font-medium hover:bg-secondary transition-all"
-          >
-            <LogOut className="w-4 h-4" />
-            Salir
-          </button>
-        </div>
-      </div>
-    </div>
+            <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center">
+              <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h2 id="session-timeout-title" className="text-lg font-semibold">Sesión por vencer</h2>
+            <p className="text-sm text-muted-foreground">
+              Llevás un tiempo sin actividad. Si no respondés, cerraremos tu sesión por seguridad.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={handleStayLoggedIn}
+                className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity"
+              >
+                Seguir conectado
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-2 flex-1 border border-border py-2.5 rounded-xl font-medium hover:bg-secondary transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+                Salir
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
