@@ -120,6 +120,7 @@ export function FixedExpensesReport({ data, monthlyData }: Props) {
                 color: 'var(--color-foreground)',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
+              labelStyle={{ fontWeight: 'bold', color: 'var(--color-foreground)' }}
               formatter={(value) => [`$${Number(value).toLocaleString('es-AR')}`, 'Monto']}
             />
             <Bar dataKey="amount" radius={[4, 4, 0, 0]}>

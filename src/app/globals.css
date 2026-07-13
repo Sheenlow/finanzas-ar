@@ -137,3 +137,14 @@ html {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: hsl(240 5% 40%);
 }
+
+/* ─── Recharts tooltip ─── */
+
+.recharts-tooltip-label {
+  color: var(--color-foreground) !important;
+  font-weight: 600 !important;
+}
+
+.recharts-tooltip-item {
+  color: var(--color-foreground) !important;
+}
