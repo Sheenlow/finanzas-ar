@@ -145,22 +145,30 @@ export function AccountForm({ userId, initialAccount, onSuccess }: {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-6 border rounded-2xl bg-card shadow-sm">
       <h2 className="text-lg font-semibold">{initialAccount ? 'Editar Cuenta' : 'Nueva Cuenta'}</h2>
-      <input
-        type="text"
-        placeholder="Nombre de la cuenta"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
-        required
-      />
-      <input
-        type="number"
-        placeholder="Balance inicial"
-        value={balance}
-        onChange={(e) => setBalance(e.target.value)}
-        className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
-        required
-      />
+      <div>
+        <label htmlFor="acct-name" className="text-xs text-muted-foreground mb-1 block">Nombre de la cuenta</label>
+        <input
+          id="acct-name"
+          type="text"
+          placeholder="Nombre de la cuenta"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="acct-balance" className="text-xs text-muted-foreground mb-1 block">Balance inicial</label>
+        <input
+          id="acct-balance"
+          type="number"
+          placeholder="Balance inicial"
+          value={balance}
+          onChange={(e) => setBalance(e.target.value)}
+          className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
+          required
+        />
+      </div>
       <CustomSelect 
         value={currency} 
         onChange={(val) => setCurrency(val as 'ARS' | 'USD')}

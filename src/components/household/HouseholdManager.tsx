@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Home, Mail, Copy, Check, Pencil, AlertTriangle, Trash2 } from 'lucide-react'
+import { Loader2, Home, Mail, Copy, Check, Pencil, AlertTriangle, Trash2, Banknote, Percent, Users } from 'lucide-react'
 import { HouseholdMonthlyReport } from './HouseholdMonthlyReport'
 import { CreateHouseholdForm } from './CreateHouseholdForm'
 import { MemberList } from './MemberList'
@@ -88,6 +88,8 @@ export function HouseholdManager({
   const membersWithoutIncome = useMemo(() => members.filter(m => !incomeMap.has(m.user_id)), [members, incomeMap])
   const totalSplit = useMemo(() => members.reduce((sum, m) => sum + m.split_percentage, 0), [members])
   const splitValid = useMemo(() => Math.abs(totalSplit - 100) < 0.01, [totalSplit])
+
+  const mySplit = useMemo(() => members.find(m => m.user_id === userId)?.split_percentage || 0, [members, userId])
 
   const wrap = useCallback(async (fn: () => Promise<void>) => { setLoading(true); setError(null); try { await fn() } catch (err: any) { setError(err.message) } finally { setLoading(false) } }, [])
 
@@ -210,13 +212,38 @@ export function HouseholdManager({
 
       <HouseholdMonthlyReport data={initialMonthlyReport} />
 
-      <TransactionList transactions={initialTransactions} sharedTransactionIds={sharedTransactionIds} userId={userId} profileMap={profileMap} />
+      <TransactionList transactions={initialTransactions} sharedTransactionIds={sharedTransactionIds} userId={userId} profileMap={profileMap} mySplitPercentage={mySplit} />
       <SettlementHistory settlements={settlements} userId={userId} profileMap={profileMap} />
       <GoalPreview goals={initialHouseholdGoals} />
 
-      <div className="bg-secondary/50 border border-border rounded-2xl p-4 text-xs">
-        <p className="font-medium mb-1">¿Cómo funciona el split automático?</p>
-        <p className="text-muted-foreground">Declarando ingresos mensuales, el sistema calcula automáticamente el % de cada miembro según su proporción sobre el ingreso total. Si preferís, podés editar el split manualmente. Los gastos del hogar se dividen al momento de registrarlos.</p>
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <h3 className="text-sm font-semibold mb-4">¿Cómo funciona el split?</h3>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="flex flex-col items-center text-center gap-2 p-3 bg-secondary/50 rounded-xl">
+            <Banknote className="w-5 h-5 text-emerald-500" />
+            <p className="text-xs font-medium">Declará tus ingresos</p>
+            <p className="text-[10px] text-muted-foreground">Cada miembro registra su ingreso mensual en ARS</p>
+          </div>
+          <div className="flex flex-col items-center text-center gap-2 p-3 bg-secondary/50 rounded-xl">
+            <div className="flex items-center gap-0.5">
+              <div className="w-6 h-2 rounded-full bg-indigo-300" />
+              <div className="w-10 h-2 rounded-full bg-indigo-400" />
+              <div className="w-4 h-2 rounded-full bg-indigo-500" />
+            </div>
+            <p className="text-xs font-medium">Se calcula el %</p>
+            <p className="text-[10px] text-muted-foreground">El sistema asigna automáticamente la proporción según ingresos</p>
+          </div>
+          <div className="flex flex-col items-center text-center gap-2 p-3 bg-secondary/50 rounded-xl">
+            <Users className="w-5 h-5 text-indigo-500" />
+            <p className="text-xs font-medium">División al registrar</p>
+            <p className="text-[10px] text-muted-foreground">Cada gasto se reparte entre los miembros al crearlo</p>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2 justify-center">
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+            {totalIncome > 0 ? 'Auto-split (por ingresos)' : 'Split manual (por % fijo)'}
+          </span>
+        </div>
       </div>
 
       {isAdmin && (

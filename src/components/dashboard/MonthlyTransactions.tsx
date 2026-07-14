@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 interface Props {
   transactions: any[]
   categories: { id: string; name: string; color: string }[]
+  onRegisterTransaction?: () => void
 }
 
-export function MonthlyTransactions({ transactions, categories }: Props) {
+export function MonthlyTransactions({ transactions, categories, onRegisterTransaction }: Props) {
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -30,6 +32,19 @@ export function MonthlyTransactions({ transactions, categories }: Props) {
     const start = (safePage - 1) * pageSize
     return transactions.slice(start, start + pageSize)
   }, [transactions, safePage, pageSize])
+
+  if (transactions.length === 0 && onRegisterTransaction) {
+    return (
+      <section className="mb-8">
+        <EmptyState
+          icon={ArrowRightLeft}
+          title="Registrá tu primer gasto"
+          description="No tenés transacciones registradas este mes. Empezá a registrar tus consumos para verlos acá."
+          action={{ label: 'Registrar gasto', onClick: onRegisterTransaction }}
+        />
+      </section>
+    )
+  }
 
   return (
     <section className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-8">

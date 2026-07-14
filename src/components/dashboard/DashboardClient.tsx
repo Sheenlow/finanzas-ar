@@ -4,13 +4,18 @@ import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
+import { Wallet, ExternalLink } from 'lucide-react'
 import { AnimatedCard } from '@/components/AnimatedCard'
 import { MonthlyTransactions } from '@/components/dashboard/MonthlyTransactions'
+import { QuickTransactionInput } from '@/components/forms/QuickTransactionInput'
 import { DashboardHouseholdSummary } from '@/components/dashboard/DashboardHouseholdSummary'
 import { DashboardGoals } from '@/components/dashboard/DashboardGoals'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { MonthSelector } from '@/components/MonthSelector'
 import { ConsolidatedBalance } from '@/components/dashboard/ConsolidatedBalance'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
+import { useUser } from '@/components/UserProvider'
 import { getEffectiveMonth } from '@/lib/utils'
 
 const TrendsChart = dynamic(() => import('@/components/dashboard/TrendsChart').then(mod => mod.TrendsChart), {
@@ -76,12 +81,44 @@ export function DashboardClient({
   initialMonth,
 }: Props) {
   const router = useRouter()
+  const { profile, refresh: refreshUser } = useUser()
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
+
+  const handleCompleteOnboarding = useCallback(() => {
+    refreshUser()
+  }, [refreshUser])
+
+  const handleRefresh = useCallback(() => {
+    router.refresh()
+  }, [router])
+
+  if (profile && !profile.onboarding_completed) {
+    return (
+      <DashboardLayout>
+        <OnboardingWizard userId={userId} onComplete={handleCompleteOnboarding} />
+      </DashboardLayout>
+    )
+  }
 
   const handleMonthChange = useCallback((month: string) => {
     setSelectedMonth(month)
     router.replace(`/?month=${month}`, { scroll: false })
   }, [router])
+
+  const navigateToAccounts = useCallback(() => {
+    router.push('/accounts')
+  }, [router])
+
+  const navigateToTransactions = useCallback(() => {
+    router.push('/transactions')
+  }, [router])
+
+  const minMonth = useMemo(() => {
+    if (transactions.length === 0) return undefined
+    const dates = transactions.map((t: any) => t.transaction_date).filter(Boolean)
+    if (dates.length === 0) return undefined
+    return dates.sort()[0].slice(0, 7)
+  }, [transactions])
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c: any) => [c.id, c])),
@@ -140,8 +177,10 @@ export function DashboardClient({
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Bienvenido{greetingName ? ` ${greetingName.split(' ')[0]}` : ''} de nuevo a tu gestión financiera.</p>
         </div>
-        <MonthSelector value={selectedMonth} onChange={handleMonthChange} />
+        <MonthSelector value={selectedMonth} onChange={handleMonthChange} minMonth={minMonth} />
       </header>
+
+      <QuickTransactionInput userId={userId} onSuccess={handleRefresh} className="mb-6" />
 
       {botLink ? (
         <motion.section
@@ -170,12 +209,19 @@ export function DashboardClient({
             <span className="text-2xl">🤖</span>
             <div className="flex-1">
               <p className="text-sm font-semibold text-foreground">Vinculá tu bot de Telegram</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Enviá este código al bot para vincular tu cuenta</p>
-              <code className="mt-1.5 inline-block text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-mono select-all">{botConfig.link_token}</code>
-              <div className="mt-2">
-                <span className="text-xs text-muted-foreground">/vincular {botConfig.link_token.toString().slice(0, 8)}...</span>
-              </div>
-              <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Registrá gastos por chat y recibí resúmenes al instante
+              </p>
+              <a
+                href={`https://t.me/FinanzasArBot?start=${botConfig.link_token}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Vincular en Telegram
+              </a>
+              <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-2 inline-block">
                 @FinanzasArBot · t.me/FinanzasArBot
               </a>
             </div>
@@ -200,26 +246,41 @@ export function DashboardClient({
         </motion.section>
       )}
 
-      <ConsolidatedBalance totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate} />
+      <ConsolidatedBalance
+        totalArs={totalArs}
+        totalUsd={totalUsd}
+        rate={exchangeRate}
+        hasAccounts={accounts.length > 0}
+        onCreateAccount={navigateToAccounts}
+      />
 
       <section className="my-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {accounts.map((account, index) => (
-            <AnimatedCard
-              key={account.id}
-              title={account.name}
-              amount={account.balance}
-              currency={account.currency as "ARS" | "USD"}
-              type={account.type as "bank" | "cash" | "crypto"}
-              delay={index * 0.05}
-            />
-          ))}
-        </div>
+        {accounts.length === 0 ? (
+          <EmptyState
+            icon={Wallet}
+            title="Agregá una cuenta"
+            description="No tenés cuentas registradas. Agregá tu primera cuenta para empezar a gestionar tus finanzas."
+            action={{ label: 'Crear cuenta', onClick: navigateToAccounts }}
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {accounts.map((account, index) => (
+              <AnimatedCard
+                key={account.id}
+                title={account.name}
+                amount={account.balance}
+                currency={account.currency as "ARS" | "USD"}
+                type={account.type as "bank" | "cash" | "crypto"}
+                delay={index * 0.05}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
-      <MonthlyTransactions transactions={filteredTransactions} categories={categories} />
+      <MonthlyTransactions transactions={filteredTransactions} categories={categories} onRegisterTransaction={navigateToTransactions} />
 
-      <CategoryPieChart data={pieData} />
+      <CategoryPieChart data={pieData} onRegisterTransaction={navigateToTransactions} />
 
       {householdFiltered.length > 0 && (
         <DashboardHouseholdSummary

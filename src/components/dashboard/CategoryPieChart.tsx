@@ -1,6 +1,8 @@
 'use client'
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import { PieChart as PieChartIcon } from 'lucide-react'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 interface CategoryData {
   name: string
@@ -11,10 +13,22 @@ interface CategoryData {
 
 interface Props {
   data: CategoryData[]
+  onRegisterTransaction?: () => void
 }
 
-export function CategoryPieChart({ data }: Props) {
-  if (data.length === 0) return null
+export function CategoryPieChart({ data, onRegisterTransaction }: Props) {
+  if (data.length === 0) {
+    return (
+      <section className="mb-8">
+        <EmptyState
+          icon={PieChartIcon}
+          title="Sin gastos este mes"
+          description="No hay gastos registrados para mostrar en el gráfico. Registrá tu primer consumo para ver el desglose por categoría."
+          action={onRegisterTransaction ? { label: 'Registrar gasto', onClick: onRegisterTransaction } : undefined}
+        />
+      </section>
+    )
+  }
 
   return (
     <section className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-8">

@@ -2,15 +2,18 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Landmark, ArrowRightLeft, TrendingUp } from 'lucide-react'
+import { Landmark, ArrowRightLeft, TrendingUp, Wallet } from 'lucide-react'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 interface Props {
   totalArs: number
   totalUsd: number
   rate: number
+  hasAccounts?: boolean
+  onCreateAccount?: () => void
 }
 
-export function ConsolidatedBalance({ totalArs, totalUsd, rate }: Props) {
+export function ConsolidatedBalance({ totalArs, totalUsd, rate, hasAccounts = true, onCreateAccount }: Props) {
   const [preferredCurrency, setPreferredCurrency] = useState<'ARS' | 'USD'>('ARS')
 
   const consolidatedTotal = preferredCurrency === 'ARS' 
@@ -24,6 +27,19 @@ export function ConsolidatedBalance({ totalArs, totalUsd, rate }: Props) {
       minimumFractionDigits: currency === 'USD' ? 2 : 0,
       maximumFractionDigits: 2,
     }).format(val)
+  }
+
+  if (!hasAccounts && onCreateAccount) {
+    return (
+      <motion.div className="animate-slide-up">
+        <EmptyState
+          icon={Wallet}
+          title="Creá tu primera cuenta"
+          description="Todavía no registraste ninguna cuenta. Agregá una cuenta para empezar a ver tu patrimonio consolidado."
+          action={{ label: 'Crear cuenta', onClick: onCreateAccount }}
+        />
+      </motion.div>
+    )
   }
 
   return (

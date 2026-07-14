@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 
 interface UserContextValue {
   user: { id: string; email: string; fullName: string } | null
-  profile: { full_name: string | null; preferred_currency: 'ARS' | 'USD' } | null
+  profile: { full_name: string | null; preferred_currency: 'ARS' | 'USD'; onboarding_completed: boolean } | null
   household: { id: string; name: string; role: 'admin' | 'member' } | null
   loading: boolean
   refresh: () => void
@@ -40,13 +40,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setUser({ id: authUser.id, email: authUser.email || '', fullName })
 
         const [{ data: profileData }, { data: membership }] = await Promise.all([
-          supabase.from('profiles').select('preferred_currency, full_name').eq('id', authUser.id).maybeSingle(),
+          supabase.from('profiles').select('preferred_currency, full_name, onboarding_completed').eq('id', authUser.id).maybeSingle(),
           supabase.from('household_members').select('households(id, name), role').eq('user_id', authUser.id).maybeSingle(),
         ])
 
         setProfile({
           full_name: profileData?.full_name || null,
           preferred_currency: profileData?.preferred_currency || 'ARS',
+          onboarding_completed: profileData?.onboarding_completed ?? false,
         })
 
         if (membership) {

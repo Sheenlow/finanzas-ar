@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 interface Option {
   value: string
   label: string
+  disabled?: boolean
 }
 
 interface CustomSelectProps {
@@ -58,11 +59,14 @@ export function CustomSelect({ value, onChange, options, placeholder, disabled, 
               <button
                 key={option.value}
                 type="button"
+                disabled={option.disabled}
                 className={cn(
                   "w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors",
-                  value === option.value && "bg-secondary font-semibold"
+                  value === option.value && "bg-secondary font-semibold",
+                  option.disabled && "opacity-30 cursor-not-allowed"
                 )}
                 onClick={() => {
+                  if (option.disabled) return
                   onChange(option.value)
                   setIsOpen(false)
                 }}

@@ -16,6 +16,7 @@ export interface Database {
           full_name: string | null
           preferred_currency: 'ARS' | 'USD'
           created_at: string
+          onboarding_completed: boolean
         }
         Insert: {
           id: string
@@ -23,6 +24,7 @@ export interface Database {
           full_name?: string | null
           preferred_currency?: 'ARS' | 'USD'
           created_at?: string
+          onboarding_completed?: boolean
         }
         Update: {
           id?: string
@@ -30,6 +32,7 @@ export interface Database {
           full_name?: string | null
           preferred_currency?: 'ARS' | 'USD'
           created_at?: string
+          onboarding_completed?: boolean
         }
       }
       households: {

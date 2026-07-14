@@ -2,10 +2,10 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { formatAmount } from './parser'
 import { getCustomPrompt } from './keywords'
 import { escapeHtml } from '@/lib/utils'
-import { HELP_MESSAGE, MSG_NO_TRANSACTIONS, MSG_NO_BALANCES } from './messages'
+import { HELP_MESSAGE, MSG_NO_TRANSACTIONS, MSG_NO_BALANCES, MSG_HOUSEHOLD_BALANCE_NO_HOGAR } from './messages'
 
 export function isCommand(text: string): boolean {
-  return /^\/(start|help|ayuda|stats|list|balance|config|vincular|desvincular)\b/.test(text.trim())
+  return /^\/(start|help|ayuda|stats|list|balance|config|vincular|desvincular|hogar)\b/.test(text.trim())
 }
 
 export async function handleCommand(
@@ -27,6 +27,9 @@ export async function handleCommand(
 
     case '/balance':
       return await getBalancesMessage(supabase, userId)
+
+    case '/hogar':
+      return await getHouseholdMessage(supabase, userId)
 
     case '/vincular': {
       if (!telegramUserId) return '❌ Error: no se pudo identificar tu usuario de Telegram.'
@@ -131,4 +134,67 @@ async function getBalancesMessage(supabase: SupabaseClient, userId: string): Pro
   const { data } = await supabase.from('accounts').select('name, balance, currency').eq('user_id', userId).order('name')
   if (!data || data.length === 0) return MSG_NO_BALANCES
   return `<b>💰 Saldos</b>\n\n${data.map((a: any) => `• ${escapeHtml(a.name)}: ${formatAmount(a.balance, a.currency)}`).join('\n')}`
+}
+
+async function getHouseholdMessage(supabase: SupabaseClient, userId: string): Promise<string> {
+  const { data: membership } = await supabase.from('household_members')
+    .select('household_id, split_percentage')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (!membership) return MSG_HOUSEHOLD_BALANCE_NO_HOGAR
+
+  const householdId = membership.household_id
+
+  const { data: household } = await supabase.from('households')
+    .select('name')
+    .eq('id', householdId)
+    .single()
+
+  const { data: members } = await supabase.from('household_members')
+    .select('user_id, split_percentage, role')
+    .eq('household_id', householdId)
+
+  const memberIds = (members || []).map((m: any) => m.user_id)
+  const { data: profiles } = await supabase.from('profiles')
+    .select('id, full_name')
+    .in('id', memberIds)
+
+  const nameMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name?.split(' ')[0] || p.id.slice(0, 8)]))
+
+  const { data: balances } = await supabase.from('household_balances')
+    .select('*')
+    .eq('household_id', householdId)
+
+  const lines: string[] = []
+  lines.push(`<b>🏠 ${escapeHtml(household?.name || 'Hogar')}</b>`)
+  lines.push(`Tu split: ${membership.split_percentage}%\n`)
+
+  lines.push('<b>Miembros:</b>')
+  for (const m of (members || [])) {
+    const name = nameMap.get(m.user_id) || m.user_id.slice(0, 8)
+    lines.push(`• ${escapeHtml(name)} — ${m.split_percentage}% ${m.role === 'admin' ? '(admin)' : ''}`)
+  }
+
+  if (balances && balances.length > 0) {
+    const myBalances = balances.filter((b: any) => b.from_user_id === userId || b.to_user_id === userId)
+    if (myBalances.length > 0) {
+      lines.push('\n<b>Saldos:</b>')
+      for (const b of myBalances) {
+        if (b.from_user_id === userId) {
+          const toName = nameMap.get(b.to_user_id) || b.to_user_id.slice(0, 8)
+          lines.push(`• Debés a ${escapeHtml(toName)}: ${formatAmount(b.open_amount, 'ARS')}`)
+        } else {
+          const fromName = nameMap.get(b.from_user_id) || b.from_user_id.slice(0, 8)
+          lines.push(`• ${escapeHtml(fromName)} te debe: ${formatAmount(b.open_amount, 'ARS')}`)
+        }
+      }
+    } else {
+      lines.push('\n✅ No tenés deudas pendientes.')
+    }
+  } else {
+    lines.push('\n✅ No hay deudas pendientes en el hogar.')
+  }
+
+  return lines.join('\n')
 }

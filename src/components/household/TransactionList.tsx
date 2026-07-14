@@ -1,15 +1,17 @@
 'use client'
 
 import { ReceiptText, Download } from 'lucide-react'
+import { SplitTooltip } from './SplitTooltip'
 
 interface TransactionListProps {
   transactions: any[]
   sharedTransactionIds: string[]
   userId: string
   profileMap: Map<string, any>
+  mySplitPercentage: number
 }
 
-export function TransactionList({ transactions, sharedTransactionIds, userId, profileMap }: TransactionListProps) {
+export function TransactionList({ transactions, sharedTransactionIds, userId, profileMap, mySplitPercentage }: TransactionListProps) {
   if (transactions.length === 0) return null
 
   return (
@@ -52,9 +54,21 @@ export function TransactionList({ transactions, sharedTransactionIds, userId, pr
                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: t.currency || 'ARS' }).format(t.amount)}
                   </td>
                   <td className="py-2 px-3 text-center">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sharedTransactionIds.includes(t.id) ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'}`}>
-                      {sharedTransactionIds.includes(t.id) ? 'Sí' : 'No'}
-                    </span>
+                    {sharedTransactionIds.includes(t.id) ? (
+                      <SplitTooltip transactionId={t.id}>
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 cursor-help"
+                          tabIndex={0}
+                          aria-label={`Dividido al ${mySplitPercentage}%. Click o hover para ver desglose.`}
+                        >
+                          Dividido {mySplitPercentage}%
+                        </span>
+                      </SplitTooltip>
+                    ) : (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        No
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 px-3 text-right text-muted-foreground text-xs">
                     {new Date(t.transaction_date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })}

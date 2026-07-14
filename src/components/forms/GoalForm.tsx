@@ -70,30 +70,42 @@ export function GoalForm({ userId, householdId, initialGoal, onSuccess }: {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-6 border rounded-2xl bg-card shadow-sm">
       <h2 className="text-lg font-semibold">{initialGoal ? 'Editar Meta' : 'Nueva Meta de Ahorro'}</h2>
-      <input
-        type="text"
-        placeholder="Nombre de la meta (ej. Auto, Vacaciones)"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
-        required
-      />
-      <input
-        type="number"
-        placeholder="Monto objetivo"
-        value={targetAmount}
-        onChange={(e) => setTargetAmount(e.target.value)}
-        className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
-        required
-      />
-      <input
-        type="number"
-        placeholder="Monto ya ahorrado"
-        value={currentAmount}
-        onChange={(e) => setCurrentAmount(e.target.value)}
-        className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
-        required
-      />
+      <div>
+        <label htmlFor="goal-name" className="text-xs text-muted-foreground mb-1 block">Nombre de la meta</label>
+        <input
+          id="goal-name"
+          type="text"
+          placeholder="Nombre de la meta (ej. Auto, Vacaciones)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="goal-target" className="text-xs text-muted-foreground mb-1 block">Monto objetivo</label>
+        <input
+          id="goal-target"
+          type="number"
+          placeholder="Monto objetivo"
+          value={targetAmount}
+          onChange={(e) => setTargetAmount(e.target.value)}
+          className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="goal-current" className="text-xs text-muted-foreground mb-1 block">Monto ya ahorrado</label>
+        <input
+          id="goal-current"
+          type="number"
+          placeholder="Monto ya ahorrado"
+          value={currentAmount}
+          onChange={(e) => setCurrentAmount(e.target.value)}
+          className="w-full px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-border transition-all"
+          required
+        />
+      </div>
       <CustomSelect 
         value={currency} 
         onChange={(val) => setCurrency(val as 'ARS' | 'USD')}
@@ -103,8 +115,9 @@ export function GoalForm({ userId, householdId, initialGoal, onSuccess }: {
         ]}
       />
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-muted-foreground ml-1">Fecha objetivo (Opcional)</label>
+        <label htmlFor="goal-date" className="text-xs text-muted-foreground ml-1">Fecha objetivo (Opcional)</label>
         <input
+          id="goal-date"
           type="date"
           value={targetDate}
           onChange={(e) => setTargetDate(e.target.value)}

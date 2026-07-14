@@ -86,3 +86,4 @@ export const MSG_NO_PENDING = '❓ No hay una operación pendiente. Empezá de n
 export const MSG_CANCELED = 'Operación cancelada.'
 export const MSG_ERROR = 'Ocurrió un error. Intentá de nuevo.'
 export const MSG_TEXT_ONLY = 'Solo acepto mensajes de texto.'
+export const MSG_HOUSEHOLD_BALANCE_NO_HOGAR = 'No pertenecés a ningún hogar. Creá o unite a uno desde la app web.'

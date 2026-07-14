@@ -122,13 +122,25 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
     <form onSubmit={handleSubmit} className="space-y-4 p-6 border rounded-2xl bg-card shadow-sm">
       <h2 className="text-lg font-semibold">{isEditing ? 'Editar consumo' : 'Nuevo consumo'}</h2>
 
-      <input type="text" placeholder="Descripción" value={f.description} onChange={e => f.setDescription(e.target.value)}
-        className="w-full px-4 py-2 border border-border rounded-xl text-sm" required />
-      <AmountInput value={f.amount} onChange={f.setAmount} />
+      <div>
+        <label htmlFor="txn-description" className="text-xs text-muted-foreground mb-1 block">
+          Descripción
+        </label>
+        <input
+          id="txn-description"
+          type="text"
+          placeholder="Descripción"
+          value={f.description}
+          onChange={e => f.setDescription(e.target.value)}
+          className="w-full px-4 py-2 border border-border rounded-xl text-sm"
+          required
+        />
+      </div>
+      <AmountInput id="txn-amount" label="Monto" value={f.amount} onChange={f.setAmount} />
 
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Fecha</label>
-        <input type="date" value={f.transactionDate} onChange={e => f.setTransactionDate(e.target.value)}
+        <label htmlFor="txn-date" className="text-xs text-muted-foreground mb-1 block">Fecha</label>
+        <input id="txn-date" type="date" value={f.transactionDate} onChange={e => f.setTransactionDate(e.target.value)}
           className="w-full px-4 py-2 border border-border rounded-xl text-sm" />
       </div>
 
