@@ -191,7 +191,7 @@ export function DashboardClient({
         <MonthSelector value={selectedMonth} onChange={handleMonthChange} minMonth={minMonth} />
       </header>
 
-      <QuickTransactionInput userId={userId} onSuccess={handleRefresh} className="mb-6" />
+      <QuickTransactionInput userId={userId} className="mb-6" />
 
       {botLink ? (
         <motion.section

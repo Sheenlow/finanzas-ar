@@ -11,6 +11,7 @@ interface AuditLogParams {
 
 export const auditService = {
   async log(params: AuditLogParams) {
+    if (typeof window !== 'undefined') return
     try {
       const admin = createAdminClient()
       await admin.from('audit_logs').insert({

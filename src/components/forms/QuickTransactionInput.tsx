@@ -33,7 +33,7 @@ interface QuickTransactionInputProps {
 
 export function QuickTransactionInput({ userId, onSuccess, className }: QuickTransactionInputProps) {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [text, setText] = useState('')
