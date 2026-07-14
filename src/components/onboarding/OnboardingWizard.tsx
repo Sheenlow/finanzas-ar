@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Wallet, ArrowRightLeft, Home, Check, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Wallet, ArrowRightLeft, Home, Check, ChevronLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { accountsService } from '@/services/accountsService'
 import { transactionsService } from '@/services/transactionsService'
@@ -17,7 +17,7 @@ interface OnboardingWizardProps {
 }
 
 export function OnboardingWizard({ userId, onComplete }: OnboardingWizardProps) {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [direction, setDirection] = useState(1)
@@ -51,9 +51,19 @@ export function OnboardingWizard({ userId, onComplete }: OnboardingWizardProps) 
   const handleSkip = async () => {
     setLoading(true)
     try {
-      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', userId)
-    } catch {}
-    setLoading(false)
+      const { error } = await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', userId)
+      if (error) {
+        console.error('Error al actualizar onboarding:', error)
+        alert('No se pudo finalizar el onboarding. Verificá que la columna onboarding_completed exista en la tabla profiles (ejecutá la migración 00015).')
+        setLoading(false)
+        return
+      }
+    } catch (err: any) {
+      console.error('Error al actualizar onboarding:', err)
+      alert('No se pudo finalizar el onboarding. Revisá la consola para más detalles.')
+      setLoading(false)
+      return
+    }
     onComplete()
   }
 
@@ -339,31 +349,17 @@ export function OnboardingWizard({ userId, onComplete }: OnboardingWizardProps) 
             Saltar onboarding
           </button>
 
-          <div className="flex items-center gap-2">
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={prevStep}
-                disabled={loading}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-xl border border-border text-foreground hover:bg-secondary transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Anterior
-              </button>
-            )}
-
-            {step < TOTAL_STEPS - 1 && (
-              <button
-                type="button"
-                onClick={nextStep}
-                disabled={loading || (step === 1 && (!amount || !categoryId))}
-                className="flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                Siguiente
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={prevStep}
+              disabled={loading}
+              className="flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-xl border border-border text-foreground hover:bg-secondary transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Anterior
+            </button>
+          )}
         </div>
 
         {step < TOTAL_STEPS - 1 && (
