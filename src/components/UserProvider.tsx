@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface UserContextValue {
@@ -28,6 +28,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserContextValue['profile']>(null)
   const [household, setHousehold] = useState<UserContextValue['household']>(null)
   const [loading, setLoading] = useState(true)
+  const hasUser = useRef(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -36,6 +37,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       const { data: { user: authUser } } = await supabase.auth.getUser()
 
       if (authUser) {
+        hasUser.current = true
         const fullName = authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || ''
         setUser({ id: authUser.id, email: authUser.email || '', fullName })
 
@@ -65,9 +67,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setHousehold(null)
       }
     } catch {
-      setUser(null)
-      setProfile(null)
-      setHousehold(null)
+      if (!hasUser.current) {
+        setUser(null)
+        setProfile(null)
+        setHousehold(null)
+      }
     } finally {
       setLoading(false)
     }

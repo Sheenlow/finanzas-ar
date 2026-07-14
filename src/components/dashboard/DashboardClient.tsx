@@ -81,18 +81,29 @@ export function DashboardClient({
   initialMonth,
 }: Props) {
   const router = useRouter()
-  const { profile, refresh: refreshUser } = useUser()
+  const { profile, loading: profileLoading, refresh: refreshUser } = useUser()
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
 
   const handleCompleteOnboarding = useCallback(() => {
     refreshUser()
-  }, [refreshUser])
+    router.refresh()
+  }, [refreshUser, router])
 
   const handleRefresh = useCallback(() => {
     router.refresh()
   }, [router])
 
-  if (profile && !profile.onboarding_completed) {
+  if (profileLoading || !profile) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-4 border-muted-foreground/20 border-t-muted-foreground rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!profile.onboarding_completed) {
     return (
       <DashboardLayout>
         <OnboardingWizard userId={userId} onComplete={handleCompleteOnboarding} />
