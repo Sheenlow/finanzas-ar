@@ -85,9 +85,8 @@ export function DashboardClient({
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
 
   const handleCompleteOnboarding = useCallback(() => {
-    refreshUser()
-    router.refresh()
-  }, [refreshUser, router])
+    router.push('/')
+  }, [router])
 
   const handleRefresh = useCallback(() => {
     router.refresh()
