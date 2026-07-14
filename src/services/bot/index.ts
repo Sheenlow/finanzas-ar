@@ -12,6 +12,7 @@ import {
   detectPaymentMethod, isCardPayment, parseText, formatAmount,
 } from './parser'
 import { parseWithAI } from './ai'
+import { validateParsedTransaction } from './validator'
 import { getKeywordRules, getCustomPrompt, saveKeywordRule } from './keywords'
 import { computeNext, renderState } from './stateMachine'
 import { isCommand, handleCommand } from './commands'
@@ -87,10 +88,17 @@ export class BotProcessor {
   private async createTransaction(parsed: ParsedTransaction): Promise<string> {
     const dateStr = getArgentinaISOString()
 
+    const accounts = await this.getAccounts()
+    const categories = await this.getCategories()
+    const validation = validateParsedTransaction(parsed, accounts, categories)
+    if (!validation.valid) {
+      console.error('AI transaction validation failed:', validation.reason, parsed)
+      throw new Error('Transacción rechazada por validación de seguridad')
+    }
+
     let categoryId: string | null = null
     if (parsed.categoryName) {
-      const cats = await this.getCategories()
-      const cat = cats.find(c => c.name.toLowerCase() === parsed.categoryName!.toLowerCase())
+      const cat = categories.find(c => c.name.toLowerCase() === parsed.categoryName!.toLowerCase())
       if (cat) categoryId = cat.id
     }
 
@@ -366,7 +374,7 @@ export class BotProcessor {
     let parsed = parseText(text, accounts, categories, keywordRules)
     if (!parsed || parsed.amount === 0) {
       const customPrompt = await getCustomPrompt(this.supabase, this.userId)
-      parsed = await parseWithAI(text, this.openai, accounts, categories, keywordRules, customPrompt)
+      parsed = await parseWithAI(text, this.openai, accounts, categories, keywordRules, customPrompt, this.userId)
     }
 
     if (!parsed || parsed.amount === 0) {

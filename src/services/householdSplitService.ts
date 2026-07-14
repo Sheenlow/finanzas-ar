@@ -122,34 +122,14 @@ export const householdSplitService = {
     toUserId: string,
     amount: number
   ) {
-    const { data: existing } = await supabase
-      .from('household_balances')
-      .select('*')
-      .eq('household_id', householdId)
-      .eq('from_user_id', fromUserId)
-      .eq('to_user_id', toUserId)
-      .maybeSingle();
+    const { error } = await supabase.rpc('atomic_update_balance', {
+      p_household_id: householdId,
+      p_from: fromUserId,
+      p_to: toUserId,
+      p_amount: amount,
+    })
 
-    if (existing) {
-      const newAmount = existing.open_amount + amount;
-      const { error } = await supabase
-        .from('household_balances')
-        .update({ open_amount: newAmount })
-        .eq('id', existing.id);
-
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('household_balances')
-        .insert({
-          household_id: householdId,
-          from_user_id: fromUserId,
-          to_user_id: toUserId,
-          open_amount: amount,
-        });
-
-      if (error) throw error;
-    }
+    if (error) throw error
   },
 
   async getBalances(supabase: any, householdId: string, currentUserId: string) {
@@ -270,47 +250,14 @@ export const householdSplitService = {
     toUserId: string,
     amount: number
   ) {
-    const { error: settlementError } = await supabase
-      .from('household_settlements')
-      .insert({
-        household_id: householdId,
-        from_user_id: fromUserId,
-        to_user_id: toUserId,
-        amount,
-      });
+    const { error } = await supabase.rpc('atomic_settle', {
+      p_household_id: householdId,
+      p_from: fromUserId,
+      p_to: toUserId,
+      p_amount: amount,
+    })
 
-    if (settlementError) throw settlementError;
-
-    const { data: balance } = await supabase
-      .from('household_balances')
-      .select('*')
-      .eq('household_id', householdId)
-      .eq('from_user_id', fromUserId)
-      .eq('to_user_id', toUserId)
-      .maybeSingle();
-
-    if (balance) {
-      const newAmount = Math.max(0, balance.open_amount - amount);
-      if (newAmount === 0) {
-        await supabase
-          .from('household_balances')
-          .delete()
-          .eq('id', balance.id);
-      } else {
-        await supabase
-          .from('household_balances')
-          .update({ open_amount: newAmount })
-          .eq('id', balance.id);
-      }
-    }
-
-    await supabase
-      .from('household_share_records')
-      .update({ is_settled: true, settled_at: new Date().toISOString() })
-      .eq('household_id', householdId)
-      .eq('owed_user_id', fromUserId)
-      .eq('paying_user_id', toUserId)
-      .eq('is_settled', false);
+    if (error) throw error
   },
 
   async getMemberSplits(supabase: any, householdId: string) {

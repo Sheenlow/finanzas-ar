@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getArgentinaMonthKey } from '@/lib/argentinaTime'
 import { redirect } from 'next/navigation'
 import { getDashboardData, getHouseholdDashboardData } from '@/lib/dashboardData'
 import { calculateBalances, calculateTrends, calculateHouseholdSplit, getGreetingName } from '@/lib/dashboardCalculations'
@@ -11,7 +12,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   if (!user) return redirect('/login')
 
   const params = await searchParams
-  const selectedMonth = params.month || new Date().toISOString().slice(0, 7)
+  const selectedMonth = params.month || getArgentinaMonthKey()
 
   const data = await getDashboardData(user.id)
   const categoryMap = new Map((data.categories || []).map((c) => [c.id, c]))

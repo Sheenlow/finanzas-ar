@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getArgentinaMonthKey } from '@/lib/argentinaTime';
 import { redirect } from 'next/navigation';
 import { HouseholdManager } from '@/components/household/HouseholdManager';
 import { savingsGoalsService } from '@/services/savingsGoalsService';
@@ -14,10 +15,7 @@ export default async function HogarPage() {
     return redirect('/login');
   }
 
-  const adminClient = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const adminClient = createAdminClient()
 
   const { data: membership } = await adminClient
     .from('household_members')
@@ -67,7 +65,7 @@ export default async function HogarPage() {
         .from('transactions')
         .select('category_id, amount, type')
         .eq('household_id', household.id)
-        .gte('transaction_date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+        .gte('transaction_date', `${getArgentinaMonthKey()}-01`),
     ]);
 
     const profilesData = p || [];

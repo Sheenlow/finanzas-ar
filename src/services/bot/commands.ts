@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { formatAmount } from './parser'
 import { getCustomPrompt } from './keywords'
+import { getArgentinaMonthKey } from '@/lib/argentinaTime'
 import { escapeHtml } from '@/lib/utils'
 import { HELP_MESSAGE, MSG_NO_TRANSACTIONS, MSG_NO_BALANCES, MSG_HOUSEHOLD_BALANCE_NO_HOGAR } from './messages'
 
@@ -108,15 +109,14 @@ export async function handleCommand(
 }
 
 async function getStatsMessage(supabase: SupabaseClient, userId: string): Promise<string> {
-  const argStr = new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })
-  const now = new Date(argStr)
-  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const monthPrefix = getArgentinaMonthKey()
+  const now = new Date()
   const { data } = await supabase.from('transactions').select('amount, currency, type').eq('user_id', userId).like('transaction_date', `${monthPrefix}%`)
   let totalArs = 0, totalUsd = 0
   const expenses = (data || []).filter((t: any) => t.type !== 'income')
   expenses.forEach((t: any) => { if (t.currency === 'ARS') totalArs += t.amount; else totalUsd += t.amount })
   const monthName = now.toLocaleString('es-AR', { month: 'long' })
-  return `<b>📊 Gastos de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${now.getFullYear()}</b>\n\n• Total ARS: ${formatAmount(totalArs, 'ARS')}\n• Total USD: ${formatAmount(totalUsd, 'USD')}\n• Transacciones: ${expenses.length}`
+  return `<b>📊 Gastos de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${monthPrefix.slice(0, 4)}</b>\n\n• Total ARS: ${formatAmount(totalArs, 'ARS')}\n• Total USD: ${formatAmount(totalUsd, 'USD')}\n• Transacciones: ${expenses.length}`
 }
 
 async function getListMessage(supabase: SupabaseClient, userId: string): Promise<string> {

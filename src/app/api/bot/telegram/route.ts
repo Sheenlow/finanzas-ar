@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TelegramClient } from '@/services/telegramClient'
 import { BotProcessor } from '@/services/bot'
+import { handleCommand } from '@/services/bot/commands'
 import { getClientIp } from '@/lib/security'
 import { telegramLimiter } from '@/lib/rateLimit'
 
@@ -39,33 +40,25 @@ export async function POST(req: NextRequest) {
 
   if (!chatId || !telegramUserId) return NextResponse.json({ ok: true })
 
-  // Resolve supabase user
-  let supabaseUserId: string | null = null
-
-  // Allow /vincular, /desvincular, and /start <token> even without prior linking
+  // Detect command types
   const isVincularCmd = text?.startsWith('/vincular')
   const isDesvincularCmd = text?.startsWith('/desvincular')
   const isStartWithToken = /^\/start\s+\S{30,}/.test(text || '')
   const needsTelegramId = isVincularCmd || isDesvincularCmd || isStartWithToken
 
-  if (!isVincularCmd && !isDesvincularCmd) {
-    supabaseUserId = await resolveUserId(telegramUserId)
-    if (!supabaseUserId) {
-      await telegram.sendMessage(chatId,
-        '🤖 Todavía no vinculaste tu cuenta.\n\n' +
-        '1. Andá al Dashboard de la app\n' +
-        '2. Copiá el código de vinculación\n' +
-        '3. Enviame: /vincular TU-CÓDIGO\n\n' +
-        'Ejemplo: /vincular a1b2c3d4-e5f6-...'
-      ).catch(() => {})
-      return NextResponse.json({ ok: true })
-    }
-  }
+  // Always resolve supabase user; only require it for non-link commands
+  const supabaseUserId = await resolveUserId(telegramUserId)
 
-  // At this point supabaseUserId is guaranteed for normal messages (non-/vincular,/desvincular).
-  // For /vincular and /desvincular supabaseUserId may be null, but handleCommand for those
-  // does NOT use this.userId for queries — it resolves the target user from the link token.
-  const processorUserId = supabaseUserId || '00000000-0000-0000-0000-000000000000'
+  if (!needsTelegramId && !supabaseUserId) {
+    await telegram.sendMessage(chatId,
+      '🤖 Todavía no vinculaste tu cuenta.\n\n' +
+      '1. Andá al Dashboard de la app\n' +
+      '2. Copiá el código de vinculación\n' +
+      '3. Enviame: /vincular TU-CÓDIGO\n\n' +
+      'Ejemplo: /vincular a1b2c3d4-e5f6-...'
+    ).catch(() => {})
+    return NextResponse.json({ ok: true })
+  }
 
   // Handle callback queries
   if (callbackQuery) {
@@ -96,18 +89,19 @@ export async function POST(req: NextRequest) {
   if (!message) return NextResponse.json({ ok: true })
 
   try {
-    const processor = new BotProcessor(processorUserId)
     let result: { text: string; keyboard?: { text: string; callback_data: string }[][] }
 
     if (text) {
-      let cmdText = text
-      if (isStartWithToken && telegramUserId) {
-        const token = text.replace(/^\/start\s+/, '').trim()
-        cmdText = `/vincular ${token}`
-      }
       if (needsTelegramId) {
-        result = { text: await processor.handleCommand(cmdText, telegramUserId) }
+        let cmdText = text
+        if (isStartWithToken && telegramUserId) {
+          const token = text.replace(/^\/start\s+/, '').trim()
+          cmdText = `/vincular ${token}`
+        }
+        const admin = createAdminClient()
+        result = { text: await handleCommand(cmdText, admin, supabaseUserId || '', telegramUserId) }
       } else {
+        const processor = new BotProcessor(supabaseUserId!)
         result = await processor.processText(text)
       }
     } else {

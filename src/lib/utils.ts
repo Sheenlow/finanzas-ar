@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { getArgentinaDate } from '@/lib/argentinaTime'
 
 export function escapeHtml(text: string): string {
   return text
@@ -105,7 +106,7 @@ export function isCurrentBillingMonth(t: {
 }
 
 export function estimateNextClosing(closingRule: 'fixed' | 'last_thursday', closingDay: number): string {
-  const now = new Date()
+  const now = getArgentinaDate()
   if (closingRule === 'last_thursday') {
     const closing = calculateClosingDate(now.getFullYear(), now.getMonth())
     if (now > closing) {

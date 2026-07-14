@@ -1,14 +1,8 @@
 import type { Account, Category, KeywordRule, ParsedTransaction } from './types'
+export { getArgentinaISOString } from '@/lib/argentinaTime'
 
 export function normalizeAmount(raw: string): number {
   return parseFloat(raw.replace(/\./g, '').replace(',', '.'))
-}
-
-export function getArgentinaISOString(): string {
-  const argStr = new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })
-  const d = new Date(argStr)
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.000-03:00`
 }
 
 export function extractKeywords(text: string): string[] {

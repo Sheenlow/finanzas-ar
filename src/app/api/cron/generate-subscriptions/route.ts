@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
-import { resolveBillingMonth } from '@/services/transactionsService';
+import { createAdminClient } from '@/lib/supabase/admin'
+import { NextResponse } from 'next/server'
+import { resolveBillingMonth } from '@/services/transactionsService'
+import { getArgentinaDate, getArgentinaMonthKey } from '@/lib/argentinaTime'
 
 function shouldGenerateThisMonth(
   frequency: string | null | undefined,
@@ -36,10 +37,7 @@ export async function GET(req: Request) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createAdminClient()
 
   const { data: subscriptions, error } = await supabase
     .from('transactions')
@@ -53,10 +51,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Error al procesar suscripciones' }, { status: 500 })
   }
 
-  const today = new Date();
-  const currentMonth = today.getMonth() + 1;
-  const currentYear = today.getFullYear();
-  const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01T00:00:00Z`;
+  const today = getArgentinaDate()
+  const currentMonth = today.getMonth() + 1
+  const currentYear = today.getFullYear()
+  const monthPrefix = getArgentinaMonthKey()
+  const startOfMonth = `${monthPrefix}-01T00:00:00.000-03:00`;
   const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
   const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
   const endOfMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00Z`;

@@ -33,3 +33,10 @@ export const strictLimiter = new Ratelimit({
   analytics: true,
   prefix: 'ratelimit:strict',
 })
+
+export const aiLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
+  analytics: true,
+  prefix: 'ratelimit:ai',
+})

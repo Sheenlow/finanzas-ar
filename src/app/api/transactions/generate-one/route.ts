@@ -1,6 +1,8 @@
-import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getArgentinaISOString, getArgentinaMonthKey } from '@/lib/argentinaTime'
+import { resolveBillingMonth } from '@/services/transactionsService'
 import { requireOrigin, getClientIp } from '@/lib/security'
 import { generalLimiter } from '@/lib/rateLimit'
 
@@ -23,10 +25,7 @@ export async function POST(request: Request) {
     const { transactionId } = await request.json()
     if (!transactionId) return NextResponse.json({ error: 'Falta transactionId' }, { status: 400 })
 
-    const adminClient = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const adminClient = createAdminClient()
 
     const { data: parent } = await adminClient
       .from('transactions')
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
 
     if (!parent) return NextResponse.json({ error: 'Transacción no encontrada' }, { status: 404 })
 
-    const currentMonthPrefix = new Date().toISOString().slice(0, 7)
+    const currentMonthPrefix = getArgentinaMonthKey()
 
     const { data: existing } = await adminClient
       .from('transactions')
@@ -47,6 +46,13 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (existing) return NextResponse.json({ error: 'Ya existe una instancia este mes' }, { status: 409 })
+
+    const billingMonth = await resolveBillingMonth(
+      adminClient,
+      parent.payment_method,
+      parent.account_id,
+      getArgentinaISOString()
+    )
 
     const { error: insertError } = await adminClient
       .from('transactions')
@@ -58,10 +64,11 @@ export async function POST(request: Request) {
         type: parent.type,
         category_id: parent.category_id,
         description: parent.description,
-        transaction_date: new Date().toISOString(),
+        transaction_date: getArgentinaISOString(),
         payment_method: parent.payment_method,
         parent_transaction_id: parent.id,
         subscription_frequency: parent.subscription_frequency,
+        billing_month: billingMonth,
         household_id: parent.household_id,
       }])
 
