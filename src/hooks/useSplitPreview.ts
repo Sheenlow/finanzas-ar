@@ -9,10 +9,21 @@ interface SplitPreviewItem {
   amount: number
 }
 
+interface MemberWithProfile {
+  user_id: string
+  split_percentage: number
+  profiles?: { full_name?: string } | null
+}
+
+interface IncomeRecord {
+  user_id: string
+  monthly_income_ars: number
+}
+
 export function useSplitPreview(
   amount: string,
-  members: any[],
-  incomes: any[],
+  members: MemberWithProfile[],
+  incomes: IncomeRecord[],
   userId: string,
   isHousehold: boolean
 ) {
@@ -21,11 +32,11 @@ export function useSplitPreview(
   useEffect(() => {
     if (isHousehold && members.length > 0 && amount) {
       const totalAmount = parseFloat(amount) || 0
-      const incomeMap = new Map(incomes.map((i: any) => [i.user_id, i.monthly_income_ars]))
-      const memberList = members.filter((m: any) => m.user_id !== userId)
+      const incomeMap = new Map(incomes.map((i) => [i.user_id, i.monthly_income_ars]))
+      const memberList = members.filter((m) => m.user_id !== userId)
       const totalIncome = Array.from(incomeMap.values()).reduce((sum: number, v: number) => sum + v, 0)
 
-      const preview: SplitPreviewItem[] = memberList.map((m: any) => {
+      const preview: SplitPreviewItem[] = memberList.map((m) => {
         const income = incomeMap.get(m.user_id) || 0
         const name = m.profiles?.full_name || (m.user_id === userId ? 'Vos' : 'Miembro')
         const percentage = totalIncome > 0 ? (income / totalIncome) * 100 : (m.split_percentage || 0)

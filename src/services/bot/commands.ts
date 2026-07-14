@@ -113,8 +113,8 @@ async function getStatsMessage(supabase: SupabaseClient, userId: string): Promis
   const now = new Date()
   const { data } = await supabase.from('transactions').select('amount, currency, type').eq('user_id', userId).like('transaction_date', `${monthPrefix}%`)
   let totalArs = 0, totalUsd = 0
-  const expenses = (data || []).filter((t: any) => t.type !== 'income')
-  expenses.forEach((t: any) => { if (t.currency === 'ARS') totalArs += t.amount; else totalUsd += t.amount })
+  const expenses = (data || []).filter((t) => t.type !== 'income')
+  expenses.forEach((t) => { if (t.currency === 'ARS') totalArs += t.amount; else totalUsd += t.amount })
   const monthName = now.toLocaleString('es-AR', { month: 'long' })
   return `<b>📊 Gastos de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${monthPrefix.slice(0, 4)}</b>\n\n• Total ARS: ${formatAmount(totalArs, 'ARS')}\n• Total USD: ${formatAmount(totalUsd, 'USD')}\n• Transacciones: ${expenses.length}`
 }
@@ -122,10 +122,10 @@ async function getStatsMessage(supabase: SupabaseClient, userId: string): Promis
 async function getListMessage(supabase: SupabaseClient, userId: string): Promise<string> {
   const { data } = await supabase.from('transactions').select('id, description, amount, currency, type, is_installment, installments_total, installment_number').eq('user_id', userId).order('created_at', { ascending: false }).limit(10)
   if (!data || data.length === 0) return MSG_NO_TRANSACTIONS
-  const lines = data.map((t: any, i: number) => {
+  const lines = data.map((t, i: number) => {
     const inst = t.is_installment ? ` (${t.installment_number}/${t.installments_total})` : ''
     const icon = t.type === 'income' ? '💰' : t.type === 'subscription' ? '🔁' : t.type === 'service' ? '⚡' : '💸'
-    return `${i + 1}. ${icon} ${escapeHtml(t.description)}: ${formatAmount(t.amount, t.currency)}${inst}`
+    return `${i + 1}. ${icon} ${escapeHtml(t.description || '')}: ${formatAmount(t.amount, t.currency)}${inst}`
   })
   return `<b>📋 Últimos movimientos</b>\n\n${lines.join('\n')}`
 }
@@ -133,7 +133,7 @@ async function getListMessage(supabase: SupabaseClient, userId: string): Promise
 async function getBalancesMessage(supabase: SupabaseClient, userId: string): Promise<string> {
   const { data } = await supabase.from('accounts').select('name, balance, currency').eq('user_id', userId).order('name')
   if (!data || data.length === 0) return MSG_NO_BALANCES
-  return `<b>💰 Saldos</b>\n\n${data.map((a: any) => `• ${escapeHtml(a.name)}: ${formatAmount(a.balance, a.currency)}`).join('\n')}`
+  return `<b>💰 Saldos</b>\n\n${data.map((a) => `• ${escapeHtml(a.name)}: ${formatAmount(a.balance, a.currency)}`).join('\n')}`
 }
 
 async function getHouseholdMessage(supabase: SupabaseClient, userId: string): Promise<string> {
@@ -155,12 +155,12 @@ async function getHouseholdMessage(supabase: SupabaseClient, userId: string): Pr
     .select('user_id, split_percentage, role')
     .eq('household_id', householdId)
 
-  const memberIds = (members || []).map((m: any) => m.user_id)
+  const memberIds = (members || []).map((m) => m.user_id)
   const { data: profiles } = await supabase.from('profiles')
     .select('id, full_name')
     .in('id', memberIds)
 
-  const nameMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name?.split(' ')[0] || p.id.slice(0, 8)]))
+  const nameMap = new Map((profiles || []).map((p) => [p.id, (p.full_name?.split(' ')[0] || p.id.slice(0, 8))] as [string, string]))
 
   const { data: balances } = await supabase.from('household_balances')
     .select('*')
@@ -177,7 +177,7 @@ async function getHouseholdMessage(supabase: SupabaseClient, userId: string): Pr
   }
 
   if (balances && balances.length > 0) {
-    const myBalances = balances.filter((b: any) => b.from_user_id === userId || b.to_user_id === userId)
+    const myBalances = balances.filter((b) => b.from_user_id === userId || b.to_user_id === userId)
     if (myBalances.length > 0) {
       lines.push('\n<b>Saldos:</b>')
       for (const b of myBalances) {

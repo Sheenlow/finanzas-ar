@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { requireOrigin, getClientIp } from '@/lib/security';
 import { generalLimiter } from '@/lib/rateLimit';
+import { InviteSchema } from '@/lib/schemas';
 import crypto from 'crypto';
 
 export async function POST(req: Request) {
@@ -17,10 +19,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { householdId, email } = await req.json();
-    if (!householdId || !email?.trim()) {
-      return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
-    }
+    const { householdId, email } = InviteSchema.parse(await req.json());
 
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -50,6 +49,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ inviteLink, token });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', details: error.issues }, { status: 400 });
+    }
     console.error('Error creating invitation:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }

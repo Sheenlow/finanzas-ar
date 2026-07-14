@@ -1,8 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { ZodError } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { requireOrigin, getClientIp } from '@/lib/security'
 import { generalLimiter } from '@/lib/rateLimit'
+import { DepositSchema } from '@/lib/schemas'
 
 export async function POST(request: Request) {
   if (!requireOrigin(request)) {
@@ -20,14 +22,7 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-    const body = await request.json()
-    const { goalId, amount } = body
-
-    if (!goalId || !amount || parseFloat(amount) <= 0) {
-      return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
-    }
-
-    const depositAmount = parseFloat(amount)
+    const { goalId, amount: depositAmount } = DepositSchema.parse(await request.json())
 
     const adminClient = createAdminClient()
 
@@ -75,6 +70,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, newAmount })
   } catch (err: any) {
+    if (err instanceof ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', details: err.issues }, { status: 400 })
+    }
     console.error('Error depositing to goal:', err)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }

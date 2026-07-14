@@ -3,11 +3,15 @@
 import { ReceiptText, Download } from 'lucide-react'
 import { SplitTooltip } from './SplitTooltip'
 
+import type { Database } from '@/types/database.types'
+
+type Transaction = Database['public']['Tables']['transactions']['Row']
+
 interface TransactionListProps {
-  transactions: any[]
+  transactions: Transaction[]
   sharedTransactionIds: string[]
   userId: string
-  profileMap: Map<string, any>
+  profileMap: Map<string, { full_name?: string | null }>
   mySplitPercentage: number
 }
 
@@ -41,7 +45,7 @@ export function TransactionList({ transactions, sharedTransactionIds, userId, pr
             </tr>
           </thead>
           <tbody>
-            {transactions.map((t: any) => {
+            {transactions.map((t: Transaction) => {
               const payerName = t.user_id === userId ? 'Vos' : profileMap.get(t.user_id)?.full_name || 'Miembro'
               return (
                 <tr key={t.id} className="border-b border-border/30 last:border-0 hover:bg-muted/50 transition-colors">

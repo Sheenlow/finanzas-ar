@@ -4,10 +4,17 @@ import { useState, useMemo, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { Database } from '@/types/database.types'
+
+type Transaction = Database['public']['Tables']['transactions']['Row']
+type TxnWithJoined = Transaction & {
+  categories?: { name: string } | null
+  accounts?: { name: string } | null
+}
 
 interface Props {
-  data: any[]
-  monthlyData: any[]
+  data: TxnWithJoined[]
+  monthlyData: { month: string; amount: number; count: number }[]
 }
 
 function getTypeBadge(type: string, isInstallment: boolean, categoryName?: string) {

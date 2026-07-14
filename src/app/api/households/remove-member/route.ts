@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { requireOrigin, getClientIp } from '@/lib/security';
 import { generalLimiter } from '@/lib/rateLimit';
+import { RemoveMemberSchema } from '@/lib/schemas';
 
 export async function POST(req: Request) {
   if (!requireOrigin(req)) {
@@ -16,11 +18,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { memberId } = await req.json();
-
-    if (!memberId) {
-      return NextResponse.json({ error: 'memberId es obligatorio' }, { status: 400 });
-    }
+    const { memberId } = RemoveMemberSchema.parse(await req.json());
 
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -63,6 +61,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', details: error.issues }, { status: 400 });
+    }
     console.error('Error removing member:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }

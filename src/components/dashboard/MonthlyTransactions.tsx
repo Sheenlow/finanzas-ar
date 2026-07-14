@@ -5,8 +5,12 @@ import { ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 
+import type { Database } from '@/types/database.types'
+
+type Transaction = Database['public']['Tables']['transactions']['Row']
+
 interface Props {
-  transactions: any[]
+  transactions: Transaction[]
   categories: { id: string; name: string; color: string }[]
   onRegisterTransaction?: () => void
 }
@@ -60,7 +64,7 @@ export function MonthlyTransactions({ transactions, categories, onRegisterTransa
             </tr>
           </thead>
           <tbody>
-            {paginatedItems.map((t: any) => (
+            {paginatedItems.map((t: Transaction) => (
               <tr key={t.id} className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors">
                 <td className="py-4 px-4 font-medium text-foreground max-w-[140px] truncate">
                   {t.description}

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,9 +41,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
         <Script src="/theme.js" strategy="beforeInteractive" />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <ServiceWorkerRegister />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

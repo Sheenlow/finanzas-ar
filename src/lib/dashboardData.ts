@@ -12,26 +12,42 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { TypedSupabaseClient } from '@/types/supabase'
 
 type Account = Database['public']['Tables']['accounts']['Row']
+type Transaction = Database['public']['Tables']['transactions']['Row']
+type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
+type HouseholdMember = Database['public']['Tables']['household_members']['Row']
+
+export interface ReportItem {
+  name: string
+  value: number
+  color: string
+  percentage: string
+}
+
+export interface MonthlyData {
+  month: string
+  amount: number
+  count: number
+}
 
 export interface DashboardData {
   profile: { full_name: string | null } | null
   accounts: Account[]
-  transactions: any[]
-  goals: any[]
+  transactions: Transaction[]
+  goals: SavingsGoal[]
   categories: { id: string; name: string; color: string }[]
   exchangeRate: number
   cryptoPrices: { btc: number; eth: number }
   membership: { split_percentage: number; household_id: string; households: { id: string; name: string } | null } | null
   botConfig: { link_token: string } | null
   botLink: { telegram_user_id: number } | null
-  reportData: { items: any[]; monthlyData: any[] }
+  reportData: { items: Transaction[]; monthlyData: { month: string; amount: number }[] }
 }
 
 export interface HouseholdDashboardData {
-  members: any[]
-  transactions: any[]
+  members: (HouseholdMember & { profiles?: { full_name: string | null } })[]
+  transactions: Transaction[]
   sharedTransactionIds: string[]
-  goals: any[]
+  goals: SavingsGoal[]
   mySplitPercentage: number
 }
 

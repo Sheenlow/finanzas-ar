@@ -14,6 +14,7 @@ interface Transaction {
   type: string
   household_id: string | null
   user_id: string
+  transaction_date: string
 }
 
 interface Member {
@@ -21,6 +22,7 @@ interface Member {
   user_id: string
   split_percentage: number
   role: string
+  profiles?: { full_name?: string } | null
 }
 
 interface BalancePair {
@@ -88,7 +90,7 @@ export function DashboardHouseholdSummary({ transactions, members, mySplitPercen
   const arsFormatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
   const usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
 
-  const memberMap = new Map(members.map(m => [m.user_id, (m as any).profiles?.full_name || 'Miembro']))
+  const memberMap = new Map(members.map(m => [m.user_id, m.profiles?.full_name || 'Miembro']))
 
   return (
     <>
@@ -146,7 +148,7 @@ export function DashboardHouseholdSummary({ transactions, members, mySplitPercen
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {transactions.map((t: any) => {
+                  {transactions.map((t: Transaction) => {
                     const isMine = t.user_id === userId
                     const payerName = isMine ? 'Vos' : (memberMap.get(t.user_id) || 'Otro')
                     const isShared = sharedTransactionIds.includes(t.id)

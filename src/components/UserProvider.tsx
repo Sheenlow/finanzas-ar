@@ -53,10 +53,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         })
 
         if (membership) {
+          const hh = membership as unknown as { households: { id: string; name: string } | null; role: string }
           setHousehold({
-            id: (membership as any).households.id,
-            name: (membership as any).households.name,
-            role: membership.role,
+            id: hh.households?.id || '',
+            name: hh.households?.name || '',
+            role: hh.role as 'admin' | 'member',
           })
         } else {
           setHousehold(null)

@@ -1,119 +1,98 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Wallet, ExternalLink } from 'lucide-react'
-import { AnimatedCard } from '@/components/AnimatedCard'
+import type { Database } from '@/types/database.types'
 import { MonthlyTransactions } from '@/components/dashboard/MonthlyTransactions'
 import { QuickTransactionInput } from '@/components/forms/QuickTransactionInput'
 import { DashboardHouseholdSummary } from '@/components/dashboard/DashboardHouseholdSummary'
 import { DashboardGoals } from '@/components/dashboard/DashboardGoals'
 import { DashboardLayout } from '@/components/DashboardLayout'
-import { MonthSelector } from '@/components/MonthSelector'
 import { ConsolidatedBalance } from '@/components/dashboard/ConsolidatedBalance'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { useUser } from '@/components/UserProvider'
 import { getEffectiveMonth } from '@/lib/utils'
+import { DashboardHeader } from './DashboardHeader'
+import { BotBanner } from './BotBanner'
+import { DashboardAccountsGrid } from './DashboardAccountsGrid'
+import { OfflineBanner } from '@/components/OfflineBanner'
 
 const TrendsChart = dynamic(() => import('@/components/dashboard/TrendsChart').then(mod => mod.TrendsChart), {
-  ssr: false,
-  loading: () => <div className="h-64" />
+  ssr: false, loading: () => <div className="h-64" />
 })
 const CategoryPieChart = dynamic(() => import('@/components/dashboard/CategoryPieChart').then(mod => mod.CategoryPieChart), {
-  ssr: false,
-  loading: () => <div className="h-64" />
+  ssr: false, loading: () => <div className="h-64" />
 })
 const FixedExpensesReport = dynamic(() => import('@/components/dashboard/FixedExpensesReport').then(mod => mod.FixedExpensesReport), {
-  ssr: false,
-  loading: () => <div className="h-64" />
+  ssr: false, loading: () => <div className="h-64" />
 })
 const MonthlyFixedExpensesReport = dynamic(() => import('@/components/dashboard/MonthlyFixedExpensesReport').then(mod => mod.MonthlyFixedExpensesReport), {
-  ssr: false,
-  loading: () => <div className="h-64" />
+  ssr: false, loading: () => <div className="h-64" />
 })
+
+type AccountRow = Database['public']['Tables']['accounts']['Row']
+type TransactionRow = Database['public']['Tables']['transactions']['Row']
+type SavingsGoalRow = Database['public']['Tables']['savings_goals']['Row']
+type HouseholdMemberRow = Database['public']['Tables']['household_members']['Row']
+
+interface TrendItem {
+  month: string
+  ingresos: number
+  gastos: number
+}
 
 interface Props {
   greetingName: string
-  accounts: any[]
-  transactions: any[]
-  goals: any[]
-  categories: any[]
+  accounts: AccountRow[]
+  transactions: TransactionRow[]
+  goals: SavingsGoalRow[]
+  categories: { id: string; name: string; color: string }[]
   exchangeRate: number
   cryptoPrices: { btc: number; eth: number }
   totalArs: number
   totalUsd: number
-  reportData: { items: any[]; monthlyData: any[] }
-  trendData: any[]
+  reportData: { items: TransactionRow[]; monthlyData: { month: string; amount: number; count: number }[] }
+  trendData: TrendItem[]
   botConfig: { link_token: string } | null
   botLink: { telegram_user_id: number } | null
-  householdMembers: any[]
-  householdTransactions: any[]
+  householdMembers: (HouseholdMemberRow & { profiles?: { full_name: string | null } })[]
+  householdTransactions: TransactionRow[]
   sharedTransactionIds: string[]
-  householdGoals: any[]
+  householdGoals: SavingsGoalRow[]
   mySplitPercentage: number
   userId: string
   initialMonth: string
 }
 
 export function DashboardClient({
-  greetingName,
-  accounts,
-  transactions,
-  goals,
-  categories,
-  exchangeRate,
-  cryptoPrices,
-  totalArs,
-  totalUsd,
-  reportData,
-  trendData,
-  botConfig,
-  botLink,
-  householdMembers,
-  householdTransactions,
-  sharedTransactionIds,
-  householdGoals,
-  mySplitPercentage,
-  userId,
-  initialMonth,
+  greetingName, accounts, transactions, goals, categories,
+  exchangeRate, cryptoPrices, totalArs, totalUsd, reportData, trendData,
+  botConfig, botLink, householdMembers, householdTransactions,
+  sharedTransactionIds, householdGoals, mySplitPercentage, userId, initialMonth,
 }: Props) {
   const router = useRouter()
   const { profile, loading: profileLoading, refresh: refreshUser } = useUser()
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
 
-  const handleCompleteOnboarding = useCallback(() => {
-    window.location.href = '/'
-  }, [])
-
-  const handleRefresh = useCallback(() => {
-    router.refresh()
-  }, [router])
-
+  const handleCompleteOnboarding = useCallback(() => { window.location.href = '/' }, [])
+  const handleRefresh = useCallback(() => { router.refresh() }, [router])
   const handleMonthChange = useCallback((month: string) => {
     setSelectedMonth(month)
     router.replace(`/?month=${month}`, { scroll: false })
   }, [router])
-
-  const navigateToAccounts = useCallback(() => {
-    router.push('/accounts')
-  }, [router])
-
-  const navigateToTransactions = useCallback(() => {
-    router.push('/transactions')
-  }, [router])
+  const navigateToAccounts = useCallback(() => { router.push('/accounts') }, [router])
+  const navigateToTransactions = useCallback(() => { router.push('/transactions') }, [router])
 
   const minMonth = useMemo(() => {
     if (transactions.length === 0) return undefined
-    const dates = transactions.map((t: any) => t.transaction_date).filter(Boolean)
+    const dates = transactions.map((t) => t.transaction_date).filter(Boolean)
     if (dates.length === 0) return undefined
     return dates.sort()[0].slice(0, 7)
   }, [transactions])
 
   const categoryMap = useMemo(
-    () => new Map(categories.map((c: any) => [c.id, c])),
+    () => new Map(categories.map((c) => [c.id, c])),
     [categories]
   )
 
@@ -121,8 +100,7 @@ export function DashboardClient({
     const now = new Date()
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const todayStr = now.toISOString().slice(0, 10)
-
-    return transactions.filter((t: any) => {
+    return transactions.filter((t) => {
       const effectiveMonth = getEffectiveMonth(t)
       const isCurrentMonth = effectiveMonth === selectedMonth
       const isChild = t.parent_transaction_id && t.id !== t.parent_transaction_id
@@ -132,7 +110,7 @@ export function DashboardClient({
   }, [transactions, selectedMonth])
 
   const householdFiltered = useMemo(() => {
-    return householdTransactions.filter((t: any) => {
+    return householdTransactions.filter((t) => {
       const effectiveMonth = getEffectiveMonth(t)
       return effectiveMonth === selectedMonth
     })
@@ -142,7 +120,7 @@ export function DashboardClient({
 
   const pieData = useMemo(() => {
     const expenseByCategory = new Map<string, number>()
-    filteredTransactions.forEach((t: any) => {
+    filteredTransactions.forEach((t) => {
       if (t.type === 'expense' && t.category_id && categoryMap.has(t.category_id)) {
         const current = expenseByCategory.get(t.category_id) || 0
         expenseByCategory.set(t.category_id, current + (t.household_id ? t.amount * hhShare : t.amount))
@@ -182,110 +160,25 @@ export function DashboardClient({
 
   return (
     <DashboardLayout>
-      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Bienvenido{greetingName ? ` ${greetingName.split(' ')[0]}` : ''} de nuevo a tu gestión financiera.</p>
-        </div>
-        <MonthSelector value={selectedMonth} onChange={handleMonthChange} minMonth={minMonth} />
-      </header>
+      <OfflineBanner />
+      <DashboardHeader
+        greetingName={greetingName}
+        selectedMonth={selectedMonth}
+        minMonth={minMonth}
+        onMonthChange={handleMonthChange}
+      />
 
       <QuickTransactionInput userId={userId} className="mb-6" />
 
-      {botLink ? (
-        <motion.section
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-card border border-border border-l-4 border-l-emerald-500 rounded-2xl p-5 mb-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🤖</span>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">Bot de Telegram vinculado</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Telegram ID: {botLink.telegram_user_id}</p>
-              <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
-                @FinanzasArBot · t.me/FinanzasArBot
-              </a>
-            </div>
-          </div>
-        </motion.section>
-      ) : botConfig?.link_token ? (
-        <motion.section
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-card border border-border border-l-4 border-l-indigo-500 rounded-2xl p-5 mb-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-            <span className="text-2xl">🤖</span>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">Vinculá tu bot de Telegram</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Registrá gastos por chat y recibí resúmenes al instante
-              </p>
-              <a
-                href={`https://t.me/FinanzasArBot?start=${botConfig.link_token}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Vincular en Telegram
-              </a>
-              <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-2 inline-block">
-                @FinanzasArBot · t.me/FinanzasArBot
-              </a>
-            </div>
-          </div>
-        </motion.section>
-      ) : (
-        <motion.section
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-card border border-border border-l-4 border-l-amber-500 rounded-2xl p-5 mb-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🤖</span>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Bot de Telegram</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Usá el comando /config para empezar.</p>
-              <a href="https://t.me/FinanzasArBot" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1 inline-block">
-                @FinanzasArBot · t.me/FinanzasArBot
-              </a>
-            </div>
-          </div>
-        </motion.section>
-      )}
+      <BotBanner botConfig={botConfig} botLink={botLink} />
 
       <ConsolidatedBalance
-        totalArs={totalArs}
-        totalUsd={totalUsd}
-        rate={exchangeRate}
-        hasAccounts={accounts.length > 0}
-        onCreateAccount={navigateToAccounts}
+        totalArs={totalArs} totalUsd={totalUsd} rate={exchangeRate}
+        hasAccounts={accounts.length > 0} onCreateAccount={navigateToAccounts}
       />
 
       <section className="my-8">
-        {accounts.length === 0 ? (
-          <EmptyState
-            icon={Wallet}
-            title="Agregá una cuenta"
-            description="No tenés cuentas registradas. Agregá tu primera cuenta para empezar a gestionar tus finanzas."
-            action={{ label: 'Crear cuenta', onClick: navigateToAccounts }}
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {accounts.map((account, index) => (
-              <AnimatedCard
-                key={account.id}
-                title={account.name}
-                amount={account.balance}
-                currency={account.currency as "ARS" | "USD"}
-                type={account.type as "bank" | "cash" | "crypto"}
-                delay={index * 0.05}
-              />
-            ))}
-          </div>
-        )}
+        <DashboardAccountsGrid accounts={accounts} onCreateAccount={navigateToAccounts} />
       </section>
 
       <MonthlyTransactions transactions={filteredTransactions} categories={categories} onRegisterTransaction={navigateToTransactions} />
@@ -294,8 +187,8 @@ export function DashboardClient({
 
       {householdFiltered.length > 0 && (
         <DashboardHouseholdSummary
-          transactions={householdFiltered}
-          members={householdMembers}
+          transactions={householdFiltered as any}
+          members={householdMembers as any}
           mySplitPercentage={mySplitPercentage}
           userId={userId}
           sharedTransactionIds={sharedTransactionIds}
@@ -306,13 +199,11 @@ export function DashboardClient({
 
       <TrendsChart data={trendData} />
 
-      <FixedExpensesReport data={reportData.items} monthlyData={reportData.monthlyData} />
+      <FixedExpensesReport data={reportData.items as any} monthlyData={reportData.monthlyData} />
 
       <MonthlyFixedExpensesReport
-        transactions={transactions}
-        selectedMonth={selectedMonth}
-        exchangeRate={exchangeRate}
-        cryptoPrices={cryptoPrices}
+        transactions={transactions} selectedMonth={selectedMonth}
+        exchangeRate={exchangeRate} cryptoPrices={cryptoPrices}
       />
     </DashboardLayout>
   )

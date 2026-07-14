@@ -2,10 +2,14 @@
 
 import { Clock } from 'lucide-react'
 
+import type { Database } from '@/types/database.types'
+
+type HouseholdSettlement = Database['public']['Tables']['household_settlements']['Row']
+
 interface SettlementHistoryProps {
-  settlements: any[]
+  settlements: HouseholdSettlement[]
   userId: string
-  profileMap: Map<string, any>
+  profileMap: Map<string, { full_name?: string | null }>
 }
 
 export function SettlementHistory({ settlements, userId, profileMap }: SettlementHistoryProps) {
@@ -18,7 +22,7 @@ export function SettlementHistory({ settlements, userId, profileMap }: Settlemen
         Historial de liquidaciones
       </h3>
       <div className="space-y-2">
-        {settlements.map((s: any) => {
+        {settlements.map((s: HouseholdSettlement) => {
           const fromName = s.from_user_id === userId ? 'Vos' : profileMap.get(s.from_user_id)?.full_name || 'Miembro'
           const toName = s.to_user_id === userId ? 'Vos' : profileMap.get(s.to_user_id)?.full_name || 'Miembro'
           return (

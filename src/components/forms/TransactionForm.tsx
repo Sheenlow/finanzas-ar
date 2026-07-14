@@ -6,6 +6,8 @@ import { accountsService } from '@/services/accountsService'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
+import { enqueueTransaction, getQueueSize } from '@/lib/offlineQueue'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { Check } from 'lucide-react'
 import { cn, getBillingMonthFromRules } from '@/lib/utils'
@@ -25,16 +27,27 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const isOnline = useOnlineStatus()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [householdId, setHouseholdId] = useState<string | null>(null)
   const [householdMembers, setHouseholdMembers] = useState<(HouseholdMember & { profiles?: { full_name?: string } })[]>([])
   const [householdIncomes, setHouseholdIncomes] = useState<HouseholdIncome[]>([])
+  const [pendingCount, setPendingCount] = useState(0)
   const isEditing = !!initialTransaction
 
   const f = useTransactionForm(initialTransaction ?? null)
   const { categories } = useCategories()
   const { creditCardData } = useCreditCardInfo(f.paymentMethod === 'card' ? f.accountId : undefined)
   const { splitPreview } = useSplitPreview(f.amount, householdMembers, householdIncomes, userId, f.isHouseholdExpense)
+
+  useEffect(() => { getQueueSize().then(setPendingCount) }, [])
+  useEffect(() => {
+    if (isOnline && pendingCount > 0) {
+      import('@/lib/offlineQueue').then(({ processQueue }) => {
+        processQueue().then(() => getQueueSize().then(setPendingCount))
+      })
+    }
+  }, [isOnline])
 
   const billingMonth = useMemo(() => {
     if (f.paymentMethod !== 'card' || !creditCardData) return null
@@ -98,9 +111,30 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
       }
 
       let txn: Transaction | Transaction[] | undefined
-      if (isEditing) { await transactionsService.update(supabase, initialTransaction!.id, body) }
-      else if (f.isInstallment) { txn = await transactionsService.createInstallments(supabase, body, finalInstallments) }
-      else { txn = await transactionsService.create(supabase, body) }
+      if (isEditing) {
+        await transactionsService.update(supabase, initialTransaction!.id, body)
+      } else if (!isOnline && !isEditing) {
+        await enqueueTransaction({
+          id: crypto.randomUUID(),
+          description: f.description,
+          amount: parsedAmount,
+          currency: f.currency,
+          type: body.type,
+          accountId: f.accountId,
+          paymentMethod: f.paymentMethod,
+          installments: finalInstallments,
+          createdAt: txnDate.toISOString(),
+        })
+        setPendingCount(prev => prev + 1)
+        f.setLoading(false)
+        if (onSuccess) onSuccess()
+        f.resetForm()
+        return
+      } else if (f.isInstallment) {
+        txn = await transactionsService.createInstallments(supabase, body, finalInstallments)
+      } else {
+        txn = await transactionsService.create(supabase, body)
+      }
 
       let txnId: string | null = null
       if (txn) txnId = Array.isArray(txn) ? (txn[0] as Transaction)?.id || null : (txn as Transaction).id || null
@@ -189,6 +223,17 @@ export function TransactionForm({ userId, initialTransaction, onSuccess }: {
         className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
         {f.loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
       </button>
+
+      {!isOnline && !isEditing && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+          Sin conexión — se guardará al reconectar
+        </p>
+      )}
+      {pendingCount > 0 && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+          {pendingCount} transacción{pendingCount !== 1 ? 'es' : ''} pendiente{pendingCount !== 1 ? 's' : ''} de sincronización
+        </p>
+      )}
     </form>
   )
 }

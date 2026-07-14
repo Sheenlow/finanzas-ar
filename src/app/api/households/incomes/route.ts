@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { householdSplitService } from '@/services/householdSplitService';
 import { requireOrigin, getClientIp } from '@/lib/security';
 import { generalLimiter } from '@/lib/rateLimit';
+import { IncomeSchema } from '@/lib/schemas';
 import type { Database } from '@/types/database.types';
 
 export async function POST(req: Request) {
@@ -18,15 +20,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { household_id, monthly_income_ars } = await req.json();
-
-    if (!household_id) {
-      return NextResponse.json({ error: 'household_id es obligatorio' }, { status: 400 });
-    }
-
-    if (typeof monthly_income_ars !== 'number' || monthly_income_ars < 0) {
-      return NextResponse.json({ error: 'Ingreso mensual inválido' }, { status: 400 });
-    }
+    const { household_id, monthly_income_ars } = IncomeSchema.parse(await req.json());
 
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -45,6 +39,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ income });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', details: error.issues }, { status: 400 });
+    }
     console.error('Error updating household income:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }

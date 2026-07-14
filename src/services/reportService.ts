@@ -1,13 +1,14 @@
 import { Database } from '@/types/database.types';
 
 type Transaction = Database['public']['Tables']['transactions']['Row'];
+type TransactionWithCategory = Transaction & { categories?: { name: string } | null };
 
 export const reportService = {
   getFixedExpenses(transactions: Transaction[]) {
     // 1. Filtrar transacciones de gastos fijos (Padres o únicos)
-    const fixedExpenses = transactions.filter(t => 
+    const fixedExpenses = (transactions as TransactionWithCategory[]).filter(t => 
       (t.type === 'subscription' || t.type === 'service' || t.is_installment === true ||
-       (t as any).categories?.name === 'Servicios') &&
+       t.categories?.name === 'Servicios') &&
       (!t.parent_transaction_id || t.id === t.parent_transaction_id)
     );
 

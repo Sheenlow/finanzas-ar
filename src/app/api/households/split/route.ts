@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { householdSplitService } from '@/services/householdSplitService';
 import { requireOrigin, getClientIp } from '@/lib/security';
 import { generalLimiter } from '@/lib/rateLimit';
+import { SplitSchema } from '@/lib/schemas';
 
 export async function POST(req: Request) {
   if (!requireOrigin(req)) {
@@ -17,11 +19,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { household_id, transaction_id, amount, currency } = await req.json();
-
-    if (!household_id || !transaction_id || !amount) {
-      return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
-    }
+    const { household_id, transaction_id, amount, currency } = SplitSchema.parse(await req.json());
 
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -60,6 +58,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, ...result });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', details: error.issues }, { status: 400 });
+    }
     console.error('Error splitting household expense:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }

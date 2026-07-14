@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Home, Mail, Copy, Check, Pencil, AlertTriangle, Trash2, Banknote, Percent, Users } from 'lucide-react'
+import { Banknote, Percent, Users } from 'lucide-react'
 import { HouseholdMonthlyReport } from './HouseholdMonthlyReport'
 import { CreateHouseholdForm } from './CreateHouseholdForm'
 import { MemberList } from './MemberList'
@@ -15,7 +15,14 @@ import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useHouseholdIncomes } from '@/hooks/useHouseholdIncomes'
 import { useInviteLink } from '@/hooks/useInviteLink'
 import { useSettlements } from '@/hooks/useSettlements'
-import { Alert } from '@/components/ui/Alert'
+import { HouseholdHeader } from './HouseholdHeader'
+import { InviteSection } from './InviteSection'
+import { DangerZone } from './DangerZone'
+import type { Database } from '@/types/database.types'
+
+type Transaction = Database['public']['Tables']['transactions']['Row']
+type Settlement = Database['public']['Tables']['household_settlements']['Row']
+type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
 
 interface Household {
   id: string
@@ -39,10 +46,10 @@ interface Props {
   myRole: string | null
   userId: string
   userEmail: string
-  initialTransactions?: any[]
-  initialSettlements?: any[]
-  profileMap?: Map<string, any>
-  initialHouseholdGoals?: any[]
+  initialTransactions?: Transaction[]
+  initialSettlements?: Settlement[]
+  profileMap?: Map<string, { full_name?: string }>
+  initialHouseholdGoals?: SavingsGoal[]
   sharedTransactionIds?: string[]
   initialMonthlyReport?: { name: string; value: number; color: string; percentage: string }[]
 }
@@ -88,7 +95,6 @@ export function HouseholdManager({
   const membersWithoutIncome = useMemo(() => members.filter(m => !incomeMap.has(m.user_id)), [members, incomeMap])
   const totalSplit = useMemo(() => members.reduce((sum, m) => sum + m.split_percentage, 0), [members])
   const splitValid = useMemo(() => Math.abs(totalSplit - 100) < 0.01, [totalSplit])
-
   const mySplit = useMemo(() => members.find(m => m.user_id === userId)?.split_percentage || 0, [members, userId])
 
   const wrap = useCallback(async (fn: () => Promise<void>) => { setLoading(true); setError(null); try { await fn() } catch (err: any) { setError(err.message) } finally { setLoading(false) } }, [])
@@ -153,27 +159,18 @@ export function HouseholdManager({
 
   return (
     <div className="space-y-6">
-      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-xl bg-primary/10"><Home className="w-5 h-5 text-primary" /></div>
-          <div className="flex-1">
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <input type="text" value={editHouseholdName} onChange={e => setEditHouseholdName(e.target.value)} className="px-3 py-1 border border-border rounded-lg text-sm font-semibold w-48" autoFocus
-                  onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setEditingName(false) }} />
-                <button onClick={handleRename} disabled={loading} className="p-1 text-xs text-emerald-600 hover:bg-emerald-50 rounded">OK</button>
-                <button onClick={() => setEditingName(false)} className="p-1 text-xs text-muted-foreground hover:bg-secondary rounded">✕</button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">{household.name}</h2>
-                {isAdmin && <button onClick={() => { setEditingName(true); setEditHouseholdName(household.name) }} className="p-1 text-xs text-muted-foreground hover:bg-secondary rounded" title="Renombrar" aria-label="Renombrar hogar"><Pencil className="w-3.5 h-3.5" /></button>}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">{members.length} miembro{members.length !== 1 ? 's' : ''}</p>
-          </div>
-        </div>
-      </div>
+      <HouseholdHeader
+        name={household.name}
+        memberCount={members.length}
+        isAdmin={isAdmin}
+        editing={editingName}
+        editValue={editHouseholdName}
+        onEditValueChange={setEditHouseholdName}
+        onStartEdit={() => { setEditingName(true); setEditHouseholdName(household.name) }}
+        onSaveEdit={handleRename}
+        onCancelEdit={() => setEditingName(false)}
+        loading={loading}
+      />
 
       <MemberList
         members={members} incomes={incomes} incomeMap={incomeMap} totalIncome={totalIncome}
@@ -189,25 +186,17 @@ export function HouseholdManager({
       />
 
       {isAdmin && (
-        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Mail className="w-4 h-4" />Invitar miembro</h3>
-          <div className="flex gap-3">
-            <input type="email" placeholder="Email de la persona" value={invite.inviteEmail} onChange={e => invite.setInviteEmail(e.target.value)} className="flex-1 px-4 py-2 border border-border rounded-xl text-sm" />
-            <button onClick={invite.handleInvite} disabled={invite.loading || !invite.inviteEmail.trim()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-              {invite.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Invitar'}
-            </button>
-          </div>
-          {displayError && <Alert variant="error" className="mt-2">{displayError}</Alert>}
-          {invite.inviteLink && (
-            <div className="mt-3 flex items-center gap-2 bg-secondary/50 p-3 rounded-xl">
-              <code className="flex-1 text-xs break-all">{invite.inviteLink}</code>
-              <button onClick={invite.handleCopyLink} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors" aria-label="Copiar enlace">
-                {invite.copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          )}
-        </div>
+        <InviteSection
+          inviteEmail={invite.inviteEmail}
+          onEmailChange={invite.setInviteEmail}
+          onInvite={invite.handleInvite}
+          loading={invite.loading}
+          disabled={!invite.inviteEmail.trim()}
+          inviteLink={invite.inviteLink}
+          copied={invite.copied}
+          onCopy={invite.handleCopyLink}
+          error={displayError}
+        />
       )}
 
       <HouseholdMonthlyReport data={initialMonthlyReport} />
@@ -246,16 +235,7 @@ export function HouseholdManager({
         </div>
       </div>
 
-      {isAdmin && (
-        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-4">
-          <p className="text-sm font-medium text-rose-700 dark:text-rose-400 mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />Zona de peligro
-          </p>
-          <button onClick={() => setShowDeleteModal(true)} className="w-full px-4 py-2 bg-rose-600 text-white rounded-xl font-medium hover:bg-rose-700 transition-colors flex items-center justify-center gap-2">
-            <Trash2 className="w-4 h-4" />Eliminar hogar
-          </button>
-        </div>
-      )}
+      {isAdmin && <DangerZone onDelete={() => setShowDeleteModal(true)} />}
 
       <LeaveModal open={showLeaveModal} householdName={household?.name} isAdmin={isAdmin} otherMembersCount={members.length - 1}
         loading={loading} onConfirm={handleLeave} onClose={() => setShowLeaveModal(false)} />

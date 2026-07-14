@@ -2,8 +2,12 @@
 
 import { Target } from 'lucide-react'
 
+import type { Database } from '@/types/database.types'
+
+type SavingsGoal = Database['public']['Tables']['savings_goals']['Row']
+
 interface GoalPreviewProps {
-  goals: any[]
+  goals: SavingsGoal[]
 }
 
 export function GoalPreview({ goals }: GoalPreviewProps) {
@@ -16,7 +20,7 @@ export function GoalPreview({ goals }: GoalPreviewProps) {
         Metas del hogar
       </h3>
       <div className="space-y-3">
-        {goals.slice(0, 4).map((goal: any) => {
+        {goals.slice(0, 4).map((goal: SavingsGoal) => {
           const progress = Math.min(Math.round((goal.current_amount / goal.target_amount) * 100), 100)
           const isCompleted = progress >= 100
           return (

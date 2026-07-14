@@ -28,7 +28,13 @@ function getNextDate(baseDate: string, freq: string): string {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
-export function RecurringExpenses({ recurring, userId }: { recurring: any[], userId: string }) {
+import type { Database } from '@/types/database.types'
+
+type Transaction = Database['public']['Tables']['transactions']['Row'] & {
+  categories?: { name: string; color?: string } | null
+}
+
+export function RecurringExpenses({ recurring, userId }: { recurring: Transaction[], userId: string }) {
   const [generating, setGenerating] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<string | null>(null)
   const router = useRouter()
@@ -63,7 +69,7 @@ export function RecurringExpenses({ recurring, userId }: { recurring: any[], use
         Gastos Fijos Programados
       </h2>
       <div className="space-y-3">
-        {recurring.map((item: any) => {
+        {recurring.map((item: Transaction) => {
           const freq = item.subscription_frequency || 'monthly'
           const isGenerating = generating.has(item.id)
           const isEditingThis = editing === item.id

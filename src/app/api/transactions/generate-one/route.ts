@@ -5,78 +5,72 @@ import { getArgentinaISOString, getArgentinaMonthKey } from '@/lib/argentinaTime
 import { resolveBillingMonth } from '@/services/transactionsService'
 import { requireOrigin, getClientIp } from '@/lib/security'
 import { generalLimiter } from '@/lib/rateLimit'
+import { withValidation } from '@/lib/apiHandler'
+import { GenerateOneSchema } from '@/lib/schemas'
 
-export async function POST(request: Request) {
-  if (!requireOrigin(request)) {
+export const POST = withValidation(GenerateOneSchema, async (body, req) => {
+  if (!requireOrigin(req)) {
     return NextResponse.json({ error: 'Acceso no permitido' }, { status: 403 })
   }
 
-  const ip = getClientIp(request)
+  const ip = getClientIp(req)
   const { success } = await generalLimiter.limit(ip)
   if (!success) {
     return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
   }
 
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-    const { transactionId } = await request.json()
-    if (!transactionId) return NextResponse.json({ error: 'Falta transactionId' }, { status: 400 })
+  const adminClient = createAdminClient()
 
-    const adminClient = createAdminClient()
+  const { data: parent } = await adminClient
+    .from('transactions')
+    .select('*')
+    .eq('id', body.transactionId)
+    .eq('user_id', user.id)
+    .single()
 
-    const { data: parent } = await adminClient
-      .from('transactions')
-      .select('*')
-      .eq('id', transactionId)
-      .eq('user_id', user.id)
-      .single()
+  if (!parent) return NextResponse.json({ error: 'Transacción no encontrada' }, { status: 404 })
 
-    if (!parent) return NextResponse.json({ error: 'Transacción no encontrada' }, { status: 404 })
+  const currentMonthPrefix = getArgentinaMonthKey()
 
-    const currentMonthPrefix = getArgentinaMonthKey()
+  const { data: existing } = await adminClient
+    .from('transactions')
+    .select('id')
+    .eq('parent_transaction_id', body.transactionId)
+    .gte('transaction_date', currentMonthPrefix + '-01')
+    .maybeSingle()
 
-    const { data: existing } = await adminClient
-      .from('transactions')
-      .select('id')
-      .eq('parent_transaction_id', transactionId)
-      .gte('transaction_date', currentMonthPrefix + '-01')
-      .maybeSingle()
+  if (existing) return NextResponse.json({ error: 'Ya existe una instancia este mes' }, { status: 409 })
 
-    if (existing) return NextResponse.json({ error: 'Ya existe una instancia este mes' }, { status: 409 })
+  const billingMonth = await resolveBillingMonth(
+    adminClient,
+    parent.payment_method,
+    parent.account_id,
+    getArgentinaISOString()
+  )
 
-    const billingMonth = await resolveBillingMonth(
-      adminClient,
-      parent.payment_method,
-      parent.account_id,
-      getArgentinaISOString()
-    )
+  const { error: insertError } = await adminClient
+    .from('transactions')
+    .insert([{
+      user_id: parent.user_id,
+      account_id: parent.account_id,
+      amount: parent.amount,
+      currency: parent.currency,
+      type: parent.type,
+      category_id: parent.category_id,
+      description: parent.description,
+      transaction_date: getArgentinaISOString(),
+      payment_method: parent.payment_method,
+      parent_transaction_id: parent.id,
+      subscription_frequency: parent.subscription_frequency,
+      billing_month: billingMonth,
+      household_id: parent.household_id,
+    }])
 
-    const { error: insertError } = await adminClient
-      .from('transactions')
-      .insert([{
-        user_id: parent.user_id,
-        account_id: parent.account_id,
-        amount: parent.amount,
-        currency: parent.currency,
-        type: parent.type,
-        category_id: parent.category_id,
-        description: parent.description,
-        transaction_date: getArgentinaISOString(),
-        payment_method: parent.payment_method,
-        parent_transaction_id: parent.id,
-        subscription_frequency: parent.subscription_frequency,
-        billing_month: billingMonth,
-        household_id: parent.household_id,
-      }])
+  if (insertError) throw insertError
 
-    if (insertError) throw insertError
-
-    return NextResponse.json({ success: true })
-  } catch (err: any) {
-    console.error('Error generating transaction:', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
-  }
-}
+  return NextResponse.json({ success: true })
+});

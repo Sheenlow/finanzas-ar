@@ -4,11 +4,25 @@ import { Database } from '@/types/database.types';
 type HouseholdIncome = Database['public']['Tables']['household_incomes']['Row'];
 type HouseholdBalance = Database['public']['Tables']['household_balances']['Row'];
 type HouseholdSettlement = Database['public']['Tables']['household_settlements']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type HouseholdShareRecord = Database['public']['Tables']['household_share_records']['Row'];
+type HouseholdMember = Database['public']['Tables']['household_members']['Row'];
 
 interface SplitMember {
   user_id: string;
   split_percentage: number;
   monthly_income_ars?: number;
+}
+
+interface ShareRecordInput {
+  transaction_id: string;
+  household_id: string;
+  paying_user_id: string;
+  owed_user_id: string;
+  share_amount: number;
+  split_percentage: number;
+  is_settled: boolean;
+  settled_at: null;
 }
 
 interface BalancePair {
@@ -22,7 +36,7 @@ interface BalancePair {
 }
 
 export const householdSplitService = {
-  async getIncomes(supabase: any, householdId: string) {
+  async getIncomes(supabase: SupabaseClient, householdId: string) {
     const { data, error } = await supabase
       .from('household_incomes')
       .select('*')
@@ -32,7 +46,7 @@ export const householdSplitService = {
     return (data || []) as HouseholdIncome[];
   },
 
-  async upsertIncome(supabase: any, householdId: string, userId: string, monthlyIncomeArs: number) {
+  async upsertIncome(supabase: SupabaseClient, householdId: string, userId: string, monthlyIncomeArs: number) {
     const { data, error } = await supabase
       .from('household_incomes')
       .upsert({
@@ -67,7 +81,7 @@ export const householdSplitService = {
   },
 
   async splitHouseholdExpense(
-    supabase: any,
+    supabase: SupabaseClient,
     transactionId: string,
     householdId: string,
     payingUserId: string,
@@ -78,7 +92,7 @@ export const householdSplitService = {
   ) {
     const autoSplit = await this.calculateAutoSplit(householdId, members, incomeMap);
 
-    const shareRecords: any[] = [];
+    const shareRecords: ShareRecordInput[] = [];
 
     for (const member of members) {
       if (member.user_id === payingUserId) continue;
@@ -116,7 +130,7 @@ export const householdSplitService = {
   },
 
   async updateBalance(
-    supabase: any,
+    supabase: SupabaseClient,
     householdId: string,
     fromUserId: string,
     toUserId: string,
@@ -132,7 +146,7 @@ export const householdSplitService = {
     if (error) throw error
   },
 
-  async getBalances(supabase: any, householdId: string, currentUserId: string) {
+  async getBalances(supabase: SupabaseClient, householdId: string, currentUserId: string) {
     const { data: balances, error } = await supabase
       .from('household_balances')
       .select('*')
@@ -160,7 +174,7 @@ export const householdSplitService = {
       .select('id, full_name')
       .in('id', Array.from(memberIds));
 
-    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p] as [string, typeof p]));
 
     let owes: BalancePair | null = null;
     let owedBy: BalancePair | null = null;
@@ -170,8 +184,8 @@ export const householdSplitService = {
     const owedByMap = new Map<string, number>();
 
     for (const balance of (balances || []) as HouseholdBalance[]) {
-      const fromProfile: any = profileMap.get(balance.from_user_id);
-      const toProfile: any = profileMap.get(balance.to_user_id);
+      const fromProfile = profileMap.get(balance.from_user_id);
+      const toProfile = profileMap.get(balance.to_user_id);
 
       const pair: BalancePair = {
         from_user_id: balance.from_user_id,
@@ -199,7 +213,7 @@ export const householdSplitService = {
       const firstOwes = owesMap.entries().next().value;
       if (firstOwes) {
         const [userId, amount] = firstOwes;
-        const profile: any = profileMap.get(userId);
+        const profile = profileMap.get(userId);
         owes = {
           from_user_id: currentUserId,
           to_user_id: userId,
@@ -216,7 +230,7 @@ export const householdSplitService = {
       const firstOwedBy = owedByMap.entries().next().value;
       if (firstOwedBy) {
         const [userId, amount] = firstOwedBy;
-        const profile: any = profileMap.get(userId);
+        const profile = profileMap.get(userId);
         owedBy = {
           from_user_id: userId,
           to_user_id: currentUserId,
@@ -232,7 +246,7 @@ export const householdSplitService = {
     return { owes, owedBy, pairs };
   },
 
-  async getSettlements(supabase: any, householdId: string) {
+  async getSettlements(supabase: SupabaseClient, householdId: string) {
     const { data, error } = await supabase
       .from('household_settlements')
       .select('*')
@@ -244,7 +258,7 @@ export const householdSplitService = {
   },
 
   async settle(
-    supabase: any,
+    supabase: SupabaseClient,
     householdId: string,
     fromUserId: string,
     toUserId: string,
@@ -260,7 +274,7 @@ export const householdSplitService = {
     if (error) throw error
   },
 
-  async getMemberSplits(supabase: any, householdId: string) {
+  async getMemberSplits(supabase: SupabaseClient, householdId: string) {
     const { data: members, error: membersError } = await supabase
       .from('household_members')
       .select('*')

@@ -4,8 +4,16 @@ import { useState, useMemo, useEffect } from 'react'
 import { Filter, ChevronLeft, ChevronRight, ArrowRightLeft, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import type { Database } from '@/types/database.types'
+
+type Transaction = Database['public']['Tables']['transactions']['Row']
+type TxnWithJoined = Transaction & {
+  categories?: { name: string } | null
+  accounts?: { name: string } | null
+}
+
 interface Props {
-  transactions: any[]
+  transactions: TxnWithJoined[]
   selectedMonth: string
   exchangeRate: number
   cryptoPrices: { btc: number; eth: number }
@@ -38,7 +46,7 @@ export function MonthlyFixedExpensesReport({ transactions, selectedMonth, exchan
       const isCurrentMonth = effectiveMonth === selectedMonth
       const isFixed =
         t.type === 'subscription' || t.type === 'service' || t.is_installment === true ||
-        (t as any).categories?.name === 'Servicios'
+        t.categories?.name === 'Servicios'
       const isParent = !t.parent_transaction_id || t.id === t.parent_transaction_id
       return isCurrentMonth && isFixed && isParent
     })

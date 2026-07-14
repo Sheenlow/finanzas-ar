@@ -10,7 +10,14 @@ import { ArrowRightLeft, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 
-function TransactionItem({ transaction, userId }: { transaction: any, userId: string }) {
+import type { Database } from '@/types/database.types'
+
+type Transaction = Database['public']['Tables']['transactions']['Row'] & {
+  accounts?: { name: string } | null
+  categories?: { name: string } | null
+}
+
+function TransactionItem({ transaction, userId }: { transaction: Transaction, userId: string }) {
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const router = useRouter()
@@ -65,7 +72,7 @@ function TransactionItem({ transaction, userId }: { transaction: any, userId: st
                   ? `${transaction.installments_total} cuotas` 
                   : transaction.categories?.name === 'Servicios' ? 'PAGO MENSUAL' 
                   : transaction.type === 'subscription' 
-                    ? `Fijo ${FREQ_MAP[transaction.subscription_frequency] || 'Mensual'}`.toUpperCase() 
+                    ? `Fijo ${FREQ_MAP[transaction.subscription_frequency || 'monthly'] || 'Mensual'}`.toUpperCase() 
                   : transaction.type === 'service' ? 'Servicio' 
                   : 'Pago único'}
             </span>
