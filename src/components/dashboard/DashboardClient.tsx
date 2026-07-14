@@ -85,30 +85,12 @@ export function DashboardClient({
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
 
   const handleCompleteOnboarding = useCallback(() => {
-    router.push('/')
-  }, [router])
+    window.location.href = '/'
+  }, [])
 
   const handleRefresh = useCallback(() => {
     router.refresh()
   }, [router])
-
-  if (profileLoading || !profile) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-4 border-muted-foreground/20 border-t-muted-foreground rounded-full animate-spin" />
-        </div>
-      </DashboardLayout>
-    )
-  }
-
-  if (!profile.onboarding_completed) {
-    return (
-      <DashboardLayout>
-        <OnboardingWizard userId={userId} onComplete={handleCompleteOnboarding} />
-      </DashboardLayout>
-    )
-  }
 
   const handleMonthChange = useCallback((month: string) => {
     setSelectedMonth(month)
@@ -179,6 +161,24 @@ export function DashboardClient({
       })
       .sort((a, b) => b.value - a.value)
   }, [filteredTransactions, categoryMap, hhShare])
+
+  if (profileLoading || !profile) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-4 border-muted-foreground/20 border-t-muted-foreground rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!profile.onboarding_completed) {
+    return (
+      <DashboardLayout>
+        <OnboardingWizard userId={userId} onComplete={handleCompleteOnboarding} />
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
