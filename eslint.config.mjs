@@ -17,6 +17,9 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/set-state-in-effect": "warn",
       "@typescript-eslint/no-empty-object-type": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/use-memo": "warn",
+      "react/no-unescaped-entities": "warn",
     },
   },
   {
