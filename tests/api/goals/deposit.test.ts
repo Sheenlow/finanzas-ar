@@ -83,7 +83,7 @@ describe('POST /api/goals/deposit', () => {
       return updateChain
     })
 
-    const req = makeRequest({ goalId: 'goal-1', amount: 5000 })
+    const req = makeRequest({ goalId: '00000000-0000-4000-8000-000000000001', amount: 5000 })
     const res = await POST(req)
     const body = await res.json()
 
@@ -110,14 +110,14 @@ describe('POST /api/goals/deposit', () => {
       return adminChain()
     })
 
-    const req = makeRequest({ goalId: 'goal-1', amount: 5000 })
+    const req = makeRequest({ goalId: '00000000-0000-4000-8000-000000000001', amount: 5000 })
     const res = await POST(req)
 
     expect(res.status).toBe(403)
   })
 
   it('POST con monto negativo retorna 400', async () => {
-    const req = makeRequest({ goalId: 'goal-1', amount: -100 })
+    const req = makeRequest({ goalId: '00000000-0000-4000-8000-000000000001', amount: -100 })
     const res = await POST(req)
 
     expect(res.status).toBe(400)
@@ -126,7 +126,7 @@ describe('POST /api/goals/deposit', () => {
   it('POST sin sesion retorna 401', async () => {
     mockAuthGetUser.mockResolvedValue({ data: { user: null }, error: null })
 
-    const req = makeRequest({ goalId: 'goal-1', amount: 5000 })
+    const req = makeRequest({ goalId: '00000000-0000-4000-8000-000000000001', amount: 5000 })
     const res = await POST(req)
 
     expect(res.status).toBe(401)

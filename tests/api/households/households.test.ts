@@ -102,7 +102,7 @@ describe('Households API', () => {
       const inviteChain = adminChain()
       mockAdminFrom.mockReturnValue(inviteChain)
 
-      const req = makeRequest('/api/households/invite', { householdId: 'hh-1', email: 'invited@test.com' })
+      const req = makeRequest('/api/households/invite', { householdId: '00000000-0000-4000-8000-000000000001', email: 'invited@test.com' })
       const res = await inviteMember(req)
       const body = await res.json()
 

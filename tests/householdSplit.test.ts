@@ -21,6 +21,7 @@ function mockSupabase(tableChains: Record<string, ReturnType<typeof chainableMoc
     from: vi.fn((table: string) => {
       return tableChains[table] || chainableMock()
     }),
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   }
 }
 

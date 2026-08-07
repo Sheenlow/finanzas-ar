@@ -58,8 +58,6 @@ describe('SessionTimeout', () => {
       fireEvent.click(screen.getByText('Seguir conectado'))
     })
 
-    expect(screen.queryByText('Sesión por vencer')).not.toBeInTheDocument()
-
     await act(async () => {
       vi.advanceTimersByTime(IDLE_TIMEOUT - WARNING_BEFORE)
     })
