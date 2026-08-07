@@ -12,6 +12,15 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
+    name: "project-rules",
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "@typescript-eslint/no-empty-object-type": ["error", { "allowObjectTypes": "only-empty" }],
+    },
+  },
+  {
+    name: "test-overrides",
     files: ["**/*.test.ts", "**/*.test.tsx"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",

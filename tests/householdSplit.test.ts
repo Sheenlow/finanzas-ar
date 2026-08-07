@@ -206,61 +206,35 @@ describe('householdSplitService', () => {
   })
 
   describe('settle', () => {
-    it('crea settlement record', async () => {
-      const settlementsChain = chainableMock()
-      const balancesChain = chainableMock()
-      balancesChain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
-      const shareRecordsChain = chainableMock()
-      const supabase = mockSupabase({
-        household_settlements: settlementsChain,
-        household_balances: balancesChain,
-        household_share_records: shareRecordsChain,
-      })
+    it('crea settlement record via RPC', async () => {
+      const supabase = mockSupabase()
 
       await householdSplitService.settle(supabase as any, 'hh-1', 'user-a', 'user-b', 5000)
 
-      expect(settlementsChain.insert).toHaveBeenCalledWith(expect.objectContaining({
-        household_id: 'hh-1',
-        from_user_id: 'user-a',
-        to_user_id: 'user-b',
-        amount: 5000,
-      }))
+      expect(supabase.rpc).toHaveBeenCalledWith('atomic_settle', {
+        p_household_id: 'hh-1',
+        p_from: 'user-a',
+        p_to: 'user-b',
+        p_amount: 5000,
+      })
     })
 
-    it('actualiza household_balances cuando existe un balance previo', async () => {
-      const settlementsChain = chainableMock()
-      const existingBalance = { id: 'bal-1', open_amount: 10000 }
-      const balancesChain = chainableMock()
-      balancesChain.maybeSingle = vi.fn().mockResolvedValue({ data: existingBalance, error: null })
-      const shareRecordsChain = chainableMock()
-      const supabase = mockSupabase({
-        household_settlements: settlementsChain,
-        household_balances: balancesChain,
-        household_share_records: shareRecordsChain,
-      })
+    it('propaga error de RPC', async () => {
+      const supabase = mockSupabase()
+      supabase.rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') })
 
-      await householdSplitService.settle(supabase as any, 'hh-1', 'user-a', 'user-b', 4000)
-
-      expect(balancesChain.update).toHaveBeenCalledWith({ open_amount: 6000 })
-      expect(balancesChain.eq).toHaveBeenCalledWith('id', 'bal-1')
+      await expect(
+        householdSplitService.settle(supabase as any, 'hh-1', 'user-a', 'user-b', 5000)
+      ).rejects.toThrow('DB error')
     })
 
-    it('elimina el balance si el settlement lo deja en 0', async () => {
-      const settlementsChain = chainableMock()
-      const existingBalance = { id: 'bal-2', open_amount: 5000 }
-      const balancesChain = chainableMock()
-      balancesChain.maybeSingle = vi.fn().mockResolvedValue({ data: existingBalance, error: null })
-      const shareRecordsChain = chainableMock()
-      const supabase = mockSupabase({
-        household_settlements: settlementsChain,
-        household_balances: balancesChain,
-        household_share_records: shareRecordsChain,
-      })
+    it('no lanza error si RPC retorna ok', async () => {
+      const supabase = mockSupabase()
+      supabase.rpc = vi.fn().mockResolvedValue({ data: null, error: null })
 
-      await householdSplitService.settle(supabase as any, 'hh-1', 'user-a', 'user-b', 5000)
-
-      expect(balancesChain.delete).toHaveBeenCalled()
-      expect(balancesChain.eq).toHaveBeenCalledWith('id', 'bal-2')
+      await expect(
+        householdSplitService.settle(supabase as any, 'hh-1', 'user-a', 'user-b', 5000)
+      ).resolves.toBeUndefined()
     })
   })
 
